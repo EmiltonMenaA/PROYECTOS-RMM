@@ -1,0 +1,22 @@
+# Proyecto RMM (Node.js + PostgreSQL)
+# Nota: no hay dependencias de Python.
+#
+# Requisitos:
+# - Node.js >= 18
+# - npm >= 9
+# - PostgreSQL >= 12
+#
+# Instalacion rapida:
+#   cd backend
+#   npm install
+#   npm run migrate
+#   npm run setup
+#   npm run start
+#
+# En otra terminal:
+#   cd frontend
+#   npm install
+#   npm run dev
+#
+# Alternativa:
+#   Ejecuta setup.ps1 desde la raiz del proyecto.
