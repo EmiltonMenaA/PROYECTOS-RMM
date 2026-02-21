@@ -129,7 +129,7 @@ npm run dev
 - **Backend API**: http://localhost:4000
 - **Credenciales iniciales**: Las que configuraste en el paso de setup
 
-## 📊 Migraciones de Base de Datos
+##  Migraciones de Base de Datos
 
 Las migraciones se ejecutan automáticamente en orden:
 
