@@ -1,6 +1,6 @@
 # Sistema de Gestión de Proyectos RMM
 
-[![CI](https://github.com/EmiltonMenaA/PROYECTOS-RMM/actions/workflows/ci.yml/badge.svg)](https://github.com/EmiltonMenaA/PROYECTOS-RMM/actions/workflows/ci.yml)
+
 
 Sistema web completo para la gestión de proyectos de construcción, permitiendo el seguimiento diario de obras, reportes fotográficos, asignación de personal y administración de tareas.
 
