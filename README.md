@@ -1,5 +1,7 @@
 # Sistema de Gestión de Proyectos RMM
 
+
+
 Sistema web completo para la gestión de proyectos de construcción, permitiendo el seguimiento diario de obras, reportes fotográficos, asignación de personal y administración de tareas.
 
 ## Características Principales
@@ -186,7 +188,7 @@ Los tokens se almacenan en `localStorage` del navegador tras el login exitoso.
 - **[MIGRACIONES.md](MIGRACIONES.md)** - Documentación de migraciones SQL
 - **[ESTANDARES_NOMBRAMIENTO.md](ESTANDARES_NOMBRAMIENTO.md)** - Estándares de nombramiento y convenciones
 - **[ANALISIS_ESTATICO.md](ANALISIS_ESTATICO.md)** - Análisis estático de código y estándares
-- **[CONFIGURACION_COMPLETADA.md](CONFIGURACION_COMPLETADA.md)** - ✅ Guía de uso del formateo automático
+- **[CONFIGURACION_COMPLETADA.md](CONFIGURACION_COMPLETADA.md)** -  Guía de uso del formateo automático
 
 ##  Calidad de Código
 
