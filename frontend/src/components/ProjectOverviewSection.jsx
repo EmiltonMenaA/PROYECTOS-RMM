@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import ProjectOverviewCard from './ProjectOverviewCard'
+import { useMemo } from 'react';
+import ProjectOverviewCard from './ProjectOverviewCard';
 
 export default function ProjectOverviewSection({ projects, onNavigate }) {
   const statistics = useMemo(() => {
@@ -8,23 +8,23 @@ export default function ProjectOverviewSection({ projects, onNavigate }) {
         total: 0,
         active: 0,
         supervisorCount: 0
-      }
+      };
     }
 
-    const uniqueSupervisors = new Set()
+    const uniqueSupervisors = new Set();
 
     projects.forEach(p => {
       if (p.supervisors) {
-        p.supervisors.forEach(sup => uniqueSupervisors.add(sup.id))
+        p.supervisors.forEach(sup => uniqueSupervisors.add(sup.id));
       }
-    })
+    });
 
     return {
       total: projects.length,
       active: projects.filter(p => p.status === 'in-progress').length,
       supervisorCount: uniqueSupervisors.size
-    }
-  }, [projects])
+    };
+  }, [projects]);
 
   return (
     <div className="space-y-6">
@@ -85,7 +85,9 @@ export default function ProjectOverviewSection({ projects, onNavigate }) {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold">Vista General de Proyectos</h2>
-            <p className="text-gray-500 text-sm mt-1">Gestiona y monitorea todos tus proyectos activos</p>
+            <p className="text-gray-500 text-sm mt-1">
+              Gestiona y monitorea todos tus proyectos activos
+            </p>
           </div>
         </div>
 
@@ -98,7 +100,7 @@ export default function ProjectOverviewSection({ projects, onNavigate }) {
         ) : (
           <div className="text-center py-12">
             <p className="text-gray-500 mb-4">No hay proyectos aún</p>
-            <button 
+            <button
               onClick={() => onNavigate('proyectos')}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
             >
@@ -108,5 +110,5 @@ export default function ProjectOverviewSection({ projects, onNavigate }) {
         )}
       </div>
     </div>
-  )
+  );
 }

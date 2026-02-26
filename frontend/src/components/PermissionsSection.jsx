@@ -1,181 +1,185 @@
-import { useEffect, useState, useMemo } from 'react'
-import { authAPI } from '../api'
+import { useEffect, useState, useMemo } from 'react';
+import { authAPI } from '../api';
 
 export default function PermissionsSection() {
-  const [supervisors, setSupervisors] = useState([])
-  const [permissions, setPermissions] = useState([])
-  const [selectedSupervisor, setSelectedSupervisor] = useState(null)
-  const [userPermissions, setUserPermissions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [showRoleModal, setShowRoleModal] = useState(false)
-  const [showPermissionsModal, setShowPermissionsModal] = useState(false)
-  const [selectedRole, setSelectedRole] = useState(null)
-  const [selectedPermissions, setSelectedPermissions] = useState([])
+  const [supervisors, setSupervisors] = useState([]);
+  const [permissions, setPermissions] = useState([]);
+  const [selectedSupervisor, setSelectedSupervisor] = useState(null);
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showPermissionsModal, setShowPermissionsModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedPermissions, setSelectedPermissions] = useState([]);
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const supervisorsRes = await authAPI.getSupervisors()
-      setSupervisors(supervisorsRes.data.users || [])
+      const supervisorsRes = await authAPI.getSupervisors();
+      setSupervisors(supervisorsRes.data.users || []);
 
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('auth_token');
       const permissionsRes = await fetch('/api/roles/permissions', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         }
-      })
-      const permData = await permissionsRes.json()
-      setPermissions(permData.permissions || [])
+      });
+      const permData = await permissionsRes.json();
+      setPermissions(permData.permissions || []);
     } catch (err) {
-      console.error('Error loading data:', err)
+      console.error('Error loading data:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const loadUserPermissions = async (userId) => {
+  const loadUserPermissions = async userId => {
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('auth_token');
       const res = await fetch(`/api/users/${userId}/permissions`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         }
-      })
-      const data = await res.json()
-      setUserPermissions(data.permissions || [])
+      });
+      const data = await res.json();
+      setUserPermissions(data.permissions || []);
     } catch (err) {
-      console.error('Error loading user permissions:', err)
+      console.error('Error loading user permissions:', err);
     }
-  }
+  };
 
-  const handleSupervisorSelect = (supervisor) => {
-    setSelectedSupervisor(supervisor)
-    setSelectedRole(supervisor.role)
-    loadUserPermissions(supervisor.id)
-  }
+  const handleSupervisorSelect = supervisor => {
+    setSelectedSupervisor(supervisor);
+    setSelectedRole(supervisor.role);
+    loadUserPermissions(supervisor.id);
+  };
 
-  const handleRoleChange = async (newRole) => {
-    setSaving(true)
+  const handleRoleChange = async newRole => {
+    setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem('auth_token');
       const res = await fetch(`/api/users/${selectedSupervisor.id}/role`, {
         method: 'PATCH',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ role: newRole })
-      })
+      });
 
       if (res.ok) {
-        setSelectedRole(newRole)
-        setSelectedSupervisor({ ...selectedSupervisor, role: newRole })
-        setSupervisors(supervisors.map(s => 
-          s.id === selectedSupervisor.id ? { ...s, role: newRole } : s
-        ))
-        setShowRoleModal(false)
+        setSelectedRole(newRole);
+        setSelectedSupervisor({ ...selectedSupervisor, role: newRole });
+        setSupervisors(
+          supervisors.map(s => (s.id === selectedSupervisor.id ? { ...s, role: newRole } : s))
+        );
+        setShowRoleModal(false);
       }
     } catch (err) {
-      console.error('Error updating role:', err)
+      console.error('Error updating role:', err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const openPermissionsModal = () => {
-    setSelectedPermissions([...userPermissions])
-    setShowPermissionsModal(true)
-  }
+    setSelectedPermissions([...userPermissions]);
+    setShowPermissionsModal(true);
+  };
 
   const handleSavePermissions = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token')
-      const toGrant = selectedPermissions.filter(p => !userPermissions.includes(p))
-      const toRevoke = userPermissions.filter(p => !selectedPermissions.includes(p))
+      const token = localStorage.getItem('auth_token');
+      const toGrant = selectedPermissions.filter(p => !userPermissions.includes(p));
+      const toRevoke = userPermissions.filter(p => !selectedPermissions.includes(p));
 
       for (const permId of toGrant) {
         await fetch(`/api/users/${selectedSupervisor.id}/permissions/${permId}`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+          headers: { Authorization: `Bearer ${token}` }
+        });
       }
 
       for (const permId of toRevoke) {
         await fetch(`/api/users/${selectedSupervisor.id}/permissions/${permId}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+          headers: { Authorization: `Bearer ${token}` }
+        });
       }
 
-      setUserPermissions([...selectedPermissions])
-      setShowPermissionsModal(false)
+      setUserPermissions([...selectedPermissions]);
+      setShowPermissionsModal(false);
     } catch (err) {
-      console.error('Error updating permissions:', err)
+      console.error('Error updating permissions:', err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
-  const togglePermissionInModal = (permId) => {
+  const togglePermissionInModal = permId => {
     if (selectedPermissions.includes(permId)) {
-      setSelectedPermissions(selectedPermissions.filter(p => p !== permId))
+      setSelectedPermissions(selectedPermissions.filter(p => p !== permId));
     } else {
-      setSelectedPermissions([...selectedPermissions, permId])
+      setSelectedPermissions([...selectedPermissions, permId]);
     }
-  }
+  };
 
   const handlePermissionToggle = async (permissionId, isGranted) => {
-    setSaving(true)
+    setSaving(true);
     try {
-      const token = localStorage.getItem('auth_token')
-      const method = isGranted ? 'DELETE' : 'POST'
-      const endpoint = `/api/users/${selectedSupervisor.id}/permissions/${permissionId}`
-      
-      const res = await fetch(endpoint, { 
+      const token = localStorage.getItem('auth_token');
+      const method = isGranted ? 'DELETE' : 'POST';
+      const endpoint = `/api/users/${selectedSupervisor.id}/permissions/${permissionId}`;
+
+      const res = await fetch(endpoint, {
         method,
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (res.ok) {
         if (isGranted) {
-          setUserPermissions(userPermissions.filter(p => p !== permissionId))
+          setUserPermissions(userPermissions.filter(p => p !== permissionId));
         } else {
-          setUserPermissions([...userPermissions, permissionId])
+          setUserPermissions([...userPermissions, permissionId]);
         }
       }
     } catch (err) {
-      console.error('Error updating permission:', err)
+      console.error('Error updating permission:', err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const filteredSupervisors = useMemo(() => {
     return supervisors.filter(sup => {
-      const search = searchTerm.toLowerCase()
-      return sup.full_name?.toLowerCase().includes(search) ||
-             sup.email?.toLowerCase().includes(search) ||
-             sup.department?.toLowerCase().includes(search)
-    })
-  }, [supervisors, searchTerm])
+      const search = searchTerm.toLowerCase();
+      return (
+        sup.full_name?.toLowerCase().includes(search) ||
+        sup.email?.toLowerCase().includes(search) ||
+        sup.department?.toLowerCase().includes(search)
+      );
+    });
+  }, [supervisors, searchTerm]);
 
   const permissionsByResource = useMemo(() => {
-    const grouped = {}
+    const grouped = {};
     permissions.forEach(perm => {
-      if (!grouped[perm.resource]) grouped[perm.resource] = []
-      grouped[perm.resource].push(perm)
-    })
-    return grouped
-  }, [permissions])
+      if (!grouped[perm.resource]) {
+        grouped[perm.resource] = [];
+      }
+      grouped[perm.resource].push(perm);
+    });
+    return grouped;
+  }, [permissions]);
 
   if (loading) {
-    return <div className="p-6 text-center text-gray-600">Cargando...</div>
+    return <div className="p-6 text-center text-gray-600">Cargando...</div>;
   }
 
   return (
@@ -191,7 +195,7 @@ export default function PermissionsSection() {
             type="text"
             placeholder="Buscar supervisor..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -224,9 +228,7 @@ export default function PermissionsSection() {
           <>
             <div className="p-6 border-b space-y-4">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  {selectedSupervisor.full_name}
-                </h3>
+                <h3 className="text-lg font-bold text-gray-900">{selectedSupervisor.full_name}</h3>
                 <p className="text-sm text-gray-600 mt-1">{selectedSupervisor.email}</p>
                 <div className="mt-2">
                   <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
@@ -258,17 +260,22 @@ export default function PermissionsSection() {
                 Object.entries(permissionsByResource).map(([resource, perms]) => (
                   <div key={resource}>
                     <h4 className="font-semibold text-gray-900 mb-4 capitalize">
-                      {resource === 'dashboard' ? 'Panel de Control' :
-                       resource === 'projects' ? 'Proyectos' :
-                       resource === 'users' ? 'Usuarios' :
-                       resource === 'reports' ? 'Reportes' :
-                       resource === 'supervisors' ? 'Supervisores' :
-                       resource}
+                      {resource === 'dashboard'
+                        ? 'Panel de Control'
+                        : resource === 'projects'
+                          ? 'Proyectos'
+                          : resource === 'users'
+                            ? 'Usuarios'
+                            : resource === 'reports'
+                              ? 'Reportes'
+                              : resource === 'supervisors'
+                                ? 'Supervisores'
+                                : resource}
                     </h4>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {perms.map(perm => {
-                        const isGranted = userPermissions.includes(perm.id)
+                        const isGranted = userPermissions.includes(perm.id);
                         return (
                           <label
                             key={perm.id}
@@ -281,11 +288,9 @@ export default function PermissionsSection() {
                               disabled={saving}
                               className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                             />
-                            <span className="text-sm text-gray-700">
-                              {perm.name}
-                            </span>
+                            <span className="text-sm text-gray-700">{perm.name}</span>
                           </label>
-                        )
+                        );
                       })}
                     </div>
                   </div>
@@ -305,7 +310,9 @@ export default function PermissionsSection() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-96 p-6">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Asignar Rol</h3>
-            <p className="text-gray-600 mb-4">Selecciona el rol para {selectedSupervisor?.full_name}</p>
+            <p className="text-gray-600 mb-4">
+              Selecciona el rol para {selectedSupervisor?.full_name}
+            </p>
 
             <div className="space-y-2 mb-6">
               {['admin', 'supervisor'].map(role => (
@@ -321,7 +328,9 @@ export default function PermissionsSection() {
                 >
                   <p className="font-semibold text-gray-900 capitalize">{role}</p>
                   <p className="text-sm text-gray-600">
-                    {role === 'admin' ? 'Acceso completo al sistema' : 'Acceso limitado a proyectos y reportes'}
+                    {role === 'admin'
+                      ? 'Acceso completo al sistema'
+                      : 'Acceso limitado a proyectos y reportes'}
                   </p>
                 </button>
               ))}
@@ -342,7 +351,9 @@ export default function PermissionsSection() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 max-h-96 overflow-y-auto">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Asignar Permisos</h3>
-            <p className="text-gray-600 mb-4">Selecciona los permisos para {selectedSupervisor?.full_name}</p>
+            <p className="text-gray-600 mb-4">
+              Selecciona los permisos para {selectedSupervisor?.full_name}
+            </p>
 
             <div className="space-y-4 mb-6">
               {permissions && permissions.length > 0 ? (
@@ -350,7 +361,9 @@ export default function PermissionsSection() {
                   {/* Group permissions by resource */}
                   {Object.entries(
                     permissions.reduce((acc, perm) => {
-                      if (!acc[perm.resource]) acc[perm.resource] = [];
+                      if (!acc[perm.resource]) {
+                        acc[perm.resource] = [];
+                      }
                       acc[perm.resource].push(perm);
                       return acc;
                     }, {})
@@ -358,12 +371,17 @@ export default function PermissionsSection() {
                     <div key={resource} className="border border-gray-200 rounded-lg p-4">
                       <h4 className="font-semibold text-gray-900 mb-3 capitalize flex items-center">
                         <span className="w-3 h-3 bg-blue-600 rounded-full mr-2"></span>
-                        {resource === 'dashboard' ? 'Panel de Control' :
-                         resource === 'projects' ? 'Proyectos' :
-                         resource === 'users' ? 'Usuarios' :
-                         resource === 'reports' ? 'Reportes' :
-                         resource === 'supervisors' ? 'Supervisores' :
-                         resource}
+                        {resource === 'dashboard'
+                          ? 'Panel de Control'
+                          : resource === 'projects'
+                            ? 'Proyectos'
+                            : resource === 'users'
+                              ? 'Usuarios'
+                              : resource === 'reports'
+                                ? 'Reportes'
+                                : resource === 'supervisors'
+                                  ? 'Supervisores'
+                                  : resource}
                       </h4>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -411,5 +429,5 @@ export default function PermissionsSection() {
         </div>
       )}
     </div>
-  )
+  );
 }

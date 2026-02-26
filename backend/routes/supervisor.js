@@ -4,13 +4,17 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-const isAllowedRole = (role) => role === 'supervisor' || role === 'admin';
+const isAllowedRole = role => role === 'supervisor' || role === 'admin';
 
 router.get('/calendar', requireAuth, async (req, res) => {
-  if (!isAllowedRole(req.user?.role)) return res.status(403).json({ error: 'Supervisor role required' });
+  if (!isAllowedRole(req.user?.role)) {
+    return res.status(403).json({ error: 'Supervisor role required' });
+  }
 
   const { start, end } = req.query;
-  if (!start || !end) return res.status(400).json({ error: 'start and end are required' });
+  if (!start || !end) {
+    return res.status(400).json({ error: 'start and end are required' });
+  }
 
   try {
     const events = await db.query(
@@ -34,14 +38,26 @@ router.get('/calendar', requireAuth, async (req, res) => {
 });
 
 router.post('/events', requireAuth, async (req, res) => {
-  if (!isAllowedRole(req.user?.role)) return res.status(403).json({ error: 'Supervisor role required' });
+  if (!isAllowedRole(req.user?.role)) {
+    return res.status(403).json({ error: 'Supervisor role required' });
+  }
   const { title, project, category, start_date, end_date, status } = req.body;
-  if (!title || !start_date || !end_date) return res.status(400).json({ error: 'title, start_date, end_date required' });
+  if (!title || !start_date || !end_date) {
+    return res.status(400).json({ error: 'title, start_date, end_date required' });
+  }
 
   try {
     const result = await db.query(
       'INSERT INTO supervisor_events (user_id, title, project, category, start_date, end_date, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, title, project, category, start_date, end_date, status',
-      [req.user.id, title, project || null, category || null, start_date, end_date, status || 'scheduled']
+      [
+        req.user.id,
+        title,
+        project || null,
+        category || null,
+        start_date,
+        end_date,
+        status || 'scheduled'
+      ]
     );
     res.status(201).json({ event: result.rows[0] });
   } catch (err) {
@@ -51,9 +67,13 @@ router.post('/events', requireAuth, async (req, res) => {
 });
 
 router.post('/tasks', requireAuth, async (req, res) => {
-  if (!isAllowedRole(req.user?.role)) return res.status(403).json({ error: 'Supervisor role required' });
+  if (!isAllowedRole(req.user?.role)) {
+    return res.status(403).json({ error: 'Supervisor role required' });
+  }
   const { title, due_date, priority, status } = req.body;
-  if (!title) return res.status(400).json({ error: 'title required' });
+  if (!title) {
+    return res.status(400).json({ error: 'title required' });
+  }
 
   try {
     const result = await db.query(
@@ -68,9 +88,13 @@ router.post('/tasks', requireAuth, async (req, res) => {
 });
 
 router.post('/actions', requireAuth, async (req, res) => {
-  if (!isAllowedRole(req.user?.role)) return res.status(403).json({ error: 'Supervisor role required' });
+  if (!isAllowedRole(req.user?.role)) {
+    return res.status(403).json({ error: 'Supervisor role required' });
+  }
   const { label, action_type } = req.body;
-  if (!label || !action_type) return res.status(400).json({ error: 'label and action_type required' });
+  if (!label || !action_type) {
+    return res.status(400).json({ error: 'label and action_type required' });
+  }
 
   try {
     const result = await db.query(

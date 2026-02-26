@@ -8,10 +8,10 @@ const router = express.Router();
 router.get('/:userId/permissions', requireAuth, async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     // Check if user is admin or the user themselves
     const currentUser = req.user;
-    if (currentUser.role !== 'admin' && currentUser.id != userId) {
+    if (currentUser.role !== 'admin' && currentUser.id !== userId) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
@@ -34,10 +34,9 @@ router.post('/:userId/permissions/:permissionId', requireAuth, requireAdmin, asy
     const { userId, permissionId } = req.params;
 
     // Check if permission exists
-    const permCheck = await db.pool.query(
-      'SELECT id FROM permissions WHERE id = $1',
-      [permissionId]
-    );
+    const permCheck = await db.pool.query('SELECT id FROM permissions WHERE id = $1', [
+      permissionId
+    ]);
     if (permCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Permission not found' });
     }
@@ -60,10 +59,10 @@ router.delete('/:userId/permissions/:permissionId', requireAuth, requireAdmin, a
   try {
     const { userId, permissionId } = req.params;
 
-    await db.pool.query(
-      'DELETE FROM user_permissions WHERE user_id = $1 AND permission_id = $2',
-      [userId, permissionId]
-    );
+    await db.pool.query('DELETE FROM user_permissions WHERE user_id = $1 AND permission_id = $2', [
+      userId,
+      permissionId
+    ]);
 
     res.json({ message: 'Permission revoked' });
   } catch (err) {

@@ -1,59 +1,61 @@
-import { useState, useRef } from 'react'
-import ProgressBar from './ProgressBar'
+import { useState, useRef } from 'react';
+import ProgressBar from './ProgressBar';
 
-export default function FileUploadWithProgress({ 
-  onFilesSelected, 
+export default function FileUploadWithProgress({
+  onFilesSelected,
   maxFiles = 5,
   allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
   maxFileSize = 10 * 1024 * 1024, // 10MB
   uploadProgress = 0,
   isUploading = false
 }) {
-  const fileInputRef = useRef(null)
-  const [selectedFiles, setSelectedFiles] = useState([])
-  const [error, setError] = useState(null)
+  const fileInputRef = useRef(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [error, setError] = useState(null);
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files || [])
-    setError(null)
+  const handleFileChange = e => {
+    const files = Array.from(e.target.files || []);
+    setError(null);
 
     // Validar número de archivos
     if (files.length > maxFiles) {
-      setError(`Máximo ${maxFiles} archivos permitidos`)
-      return
+      setError(`Máximo ${maxFiles} archivos permitidos`);
+      return;
     }
 
     // Validar cada archivo
-    const validFiles = []
+    const validFiles = [];
     for (const file of files) {
       // Validar tipo
       if (!allowedTypes.includes(file.type)) {
-        setError(`Tipo de archivo no permitido: ${file.name}`)
-        return
+        setError(`Tipo de archivo no permitido: ${file.name}`);
+        return;
       }
 
       // Validar tamaño
       if (file.size > maxFileSize) {
-        setError(`Archivo muy grande: ${file.name} (máx ${(maxFileSize / 1024 / 1024).toFixed(0)}MB)`)
-        return
+        setError(
+          `Archivo muy grande: ${file.name} (máx ${(maxFileSize / 1024 / 1024).toFixed(0)}MB)`
+        );
+        return;
       }
 
-      validFiles.push(file)
+      validFiles.push(file);
     }
 
-    setSelectedFiles(validFiles)
+    setSelectedFiles(validFiles);
     if (onFilesSelected) {
-      onFilesSelected(validFiles)
+      onFilesSelected(validFiles);
     }
-  }
+  };
 
-  const removeFile = (index) => {
-    const newFiles = selectedFiles.filter((_, i) => i !== index)
-    setSelectedFiles(newFiles)
+  const removeFile = index => {
+    const newFiles = selectedFiles.filter((_, i) => i !== index);
+    setSelectedFiles(newFiles);
     if (onFilesSelected) {
-      onFilesSelected(newFiles)
+      onFilesSelected(newFiles);
     }
-  }
+  };
 
   return (
     <div className="w-full space-y-4">
@@ -110,13 +112,9 @@ export default function FileUploadWithProgress({
                 className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200"
               >
                 <div className="flex items-center gap-3 flex-1">
-                  <span className="text-lg">
-                    {file.type.includes('image') ? '🖼️' : '📄'}
-                  </span>
+                  <span className="text-lg">{file.type.includes('image') ? '🖼️' : '📄'}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {file.name}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
                     <p className="text-xs text-gray-500">
                       {(file.size / 1024 / 1024).toFixed(2)}MB
                     </p>
@@ -142,5 +140,5 @@ export default function FileUploadWithProgress({
         </p>
       )}
     </div>
-  )
+  );
 }

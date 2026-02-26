@@ -184,6 +184,42 @@ Los tokens se almacenan en `localStorage` del navegador tras el login exitoso.
 - **[GUIA_RAPIDA.md](GUIA_RAPIDA.md)** - Guía rápida de uso
 - **[INSTRUCCIONES_EJECUCION.md](INSTRUCCIONES_EJECUCION.md)** - Pasos detallados de ejecución
 - **[MIGRACIONES.md](MIGRACIONES.md)** - Documentación de migraciones SQL
+- **[ESTANDARES_NOMBRAMIENTO.md](ESTANDARES_NOMBRAMIENTO.md)** - Estándares de nombramiento y convenciones
+- **[ANALISIS_ESTATICO.md](ANALISIS_ESTATICO.md)** - Análisis estático de código y estándares
+- **[CONFIGURACION_COMPLETADA.md](CONFIGURACION_COMPLETADA.md)** - ✅ Guía de uso del formateo automático
+
+##  Calidad de Código
+
+El proyecto utiliza **ESLint** y **Prettier** para mantener estándares de código consistentes.
+
+###  Extensiones de VS Code Instaladas:
+- **ESLint**: Validación de código en tiempo real
+- **Prettier**: Formateo automático al guardar (Ctrl+S)
+
+**El código se formatea automáticamente cuando guardas archivos.** Ver [CONFIGURACION_COMPLETADA.md](CONFIGURACION_COMPLETADA.md) para más detalles.
+
+```bash
+# Verificar todo el código
+.\verify-code.ps1
+
+# Backend - verificar y corregir
+cd backend
+npm run lint              # Verificar con ESLint
+npm run lint:fix          # Corregir automáticamente
+npm run format            # Formatear con Prettier
+npm run code:check        # Verificación completa
+
+# Frontend - verificar y corregir
+cd frontend
+npm run lint              # Verificar con ESLint
+npm run lint:fix          # Corregir automáticamente
+npm run format            # Formatear con Prettier
+npm run code:check        # Verificación completa
+```
+
+**Recomendación**: Instala las extensiones de VS Code para ESLint y Prettier para formateo automático al guardar.
+
+Para más detalles, consulta [ANALISIS_ESTATICO.md](ANALISIS_ESTATICO.md).
 
 ##  Scripts Disponibles
 
@@ -193,6 +229,10 @@ npm run dev          # Servidor desarrollo con nodemon
 npm start            # Servidor producción
 npm run migrate      # Ejecutar migraciones
 npm run setup        # Crear usuario admin
+npm run lint         # Verificar código con ESLint
+npm run lint:fix     # Corregir problemas de ESLint
+npm run format       # Formatear código con Prettier
+npm run code:check   # Verificación completa (lint + format)
 ```
 
 ### Frontend
@@ -200,6 +240,10 @@ npm run setup        # Crear usuario admin
 npm run dev          # Servidor desarrollo
 npm run build        # Build producción
 npm run preview      # Preview build
+npm run lint         # Verificar código con ESLint
+npm run lint:fix     # Corregir problemas de ESLint
+npm run format       # Formatear código con Prettier
+npm run code:check   # Verificación completa (lint + format)
 ```
 
 ##  Solución de Problemas

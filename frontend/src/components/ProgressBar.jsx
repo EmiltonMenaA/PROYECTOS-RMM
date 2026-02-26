@@ -1,6 +1,6 @@
-export default function ProgressBar({ 
-  percentage = 0, 
-  label = 'Progreso', 
+export default function ProgressBar({
+  percentage = 0,
+  label = 'Progreso',
   showPercentage = true,
   animate = true,
   color = 'blue' // 'blue', 'green', 'orange', 'red'
@@ -11,9 +11,9 @@ export default function ProgressBar({
     orange: 'bg-orange-500',
     red: 'bg-red-500',
     purple: 'bg-purple-500'
-  }
+  };
 
-  const getBgColor = () => colorClasses[color] || colorClasses.blue
+  const getBgColor = () => colorClasses[color] || colorClasses.blue;
 
   return (
     <div className="w-full">
@@ -42,9 +42,7 @@ export default function ProgressBar({
       )}
 
       {/* Complete Text */}
-      {percentage >= 100 && (
-        <p className="text-xs text-green-600 font-medium mt-2">✓ Completado</p>
-      )}
+      {percentage >= 100 && <p className="text-xs text-green-600 font-medium mt-2">✓ Completado</p>}
     </div>
-  )
+  );
 }

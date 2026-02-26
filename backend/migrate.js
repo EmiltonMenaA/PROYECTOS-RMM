@@ -13,7 +13,7 @@ async function runMigration() {
 
     const files = fs
       .readdirSync(migrationsDir)
-      .filter((file) => file.endsWith('.sql'))
+      .filter(file => file.endsWith('.sql'))
       .sort();
 
     if (files.length === 0) {
