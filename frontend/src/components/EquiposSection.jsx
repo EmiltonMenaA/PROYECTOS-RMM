@@ -1,128 +1,136 @@
-import { useEffect, useState, useMemo } from 'react'
-import { authAPI } from '../api'
-import ConfirmDeleteModal from './ConfirmDeleteModal'
+import { useEffect, useState, useMemo } from 'react';
+import { authAPI } from '../api';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 
-export default function EquiposSection({ user, onNavigate }) {
-  const [supervisores, setSupervisores] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedDepartment, setSelectedDepartment] = useState('all')
-  const [selectedStatus, setSelectedStatus] = useState('all')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [selectedSupervisor, setSelectedSupervisor] = useState(null)
-  const [actionLoading, setActionLoading] = useState(false)
-  const [showDetailsModal, setShowDetailsModal] = useState(false)
+export default function EquiposSection({ user: _user, onNavigate }) {
+  const [supervisores, setSupervisores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedSupervisor, setSelectedSupervisor] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  const itemsPerPage = 10
+  const itemsPerPage = 10;
 
   useEffect(() => {
-    loadSupervisores()
-  }, [])
+    loadSupervisores();
+  }, []);
 
   const loadSupervisores = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const { data } = await authAPI.getSupervisors()
-      setSupervisores(data.users || [])
+      const { data } = await authAPI.getSupervisors();
+      setSupervisores(data.users || []);
     } catch (err) {
-      console.error('Error loading supervisors:', err)
-      setSupervisores([])
+      console.error('Error loading supervisors:', err);
+      setSupervisores([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Get unique departments from supervisores
   const departments = useMemo(() => {
-    const depts = new Set()
+    const depts = new Set();
     supervisores.forEach(sup => {
-      if (sup.department) depts.add(sup.department)
-    })
-    return Array.from(depts).sort()
-  }, [supervisores])
+      if (sup.department) {
+        depts.add(sup.department);
+      }
+    });
+    return Array.from(depts).sort();
+  }, [supervisores]);
 
   // Filter supervisores
   const filteredSupervisores = useMemo(() => {
     return supervisores.filter(sup => {
-      const matchSearch = sup.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         sup.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         sup.department?.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const matchDept = selectedDepartment === 'all' || sup.department === selectedDepartment
-      const matchStatus = selectedStatus === 'all' || 
-                         (selectedStatus === 'active' && sup.is_active) ||
-                         (selectedStatus === 'inactive' && !sup.is_active)
-      
-      return matchSearch && matchDept && matchStatus
-    })
-  }, [supervisores, searchTerm, selectedDepartment, selectedStatus])
+      const matchSearch =
+        sup.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sup.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sup.department?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchDept = selectedDepartment === 'all' || sup.department === selectedDepartment;
+      const matchStatus =
+        selectedStatus === 'all' ||
+        (selectedStatus === 'active' && sup.is_active) ||
+        (selectedStatus === 'inactive' && !sup.is_active);
+
+      return matchSearch && matchDept && matchStatus;
+    });
+  }, [supervisores, searchTerm, selectedDepartment, selectedStatus]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredSupervisores.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredSupervisores.length / itemsPerPage);
   const paginatedSupervisores = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return filteredSupervisores.slice(start, start + itemsPerPage)
-  }, [filteredSupervisores, currentPage])
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredSupervisores.slice(start, start + itemsPerPage);
+  }, [filteredSupervisores, currentPage]);
 
   const handleDeactivate = async () => {
-    if (!selectedSupervisor) return
-    
-    setActionLoading(true)
-    try {
-      await authAPI.deactivateUser(selectedSupervisor.id, !selectedSupervisor.is_active)
-      setSupervisores(supervisores.map(s => 
-        s.id === selectedSupervisor.id 
-          ? { ...s, is_active: !s.is_active }
-          : s
-      ))
-      setShowDetailsModal(false)
-      setSelectedSupervisor(null)
-    } catch (err) {
-      console.error('Error updating supervisor status:', err)
-      alert('Error al actualizar el estado del supervisor')
-    } finally {
-      setActionLoading(false)
+    if (!selectedSupervisor) {
+      return;
     }
-  }
+
+    setActionLoading(true);
+    try {
+      await authAPI.deactivateUser(selectedSupervisor.id, !selectedSupervisor.is_active);
+      setSupervisores(
+        supervisores.map(s =>
+          s.id === selectedSupervisor.id ? { ...s, is_active: !s.is_active } : s
+        )
+      );
+      setShowDetailsModal(false);
+      setSelectedSupervisor(null);
+    } catch (err) {
+      console.error('Error updating supervisor status:', err);
+      alert('Error al actualizar el estado del supervisor');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleDeleteConfirm = async () => {
-    if (!selectedSupervisor) return
-    
-    setActionLoading(true)
-    try {
-      await authAPI.deleteUser(selectedSupervisor.id)
-      setSupervisores(supervisores.filter(s => s.id !== selectedSupervisor.id))
-      setShowDeleteModal(false)
-      setShowDetailsModal(false)
-      setSelectedSupervisor(null)
-    } catch (err) {
-      console.error('Error deleting supervisor:', err)
-      alert('Error al eliminar el supervisor')
-    } finally {
-      setActionLoading(false)
+    if (!selectedSupervisor) {
+      return;
     }
-  }
 
-  const getInitials = (fullName) => {
-    const parts = fullName?.trim().split(' ').filter(Boolean) || []
+    setActionLoading(true);
+    try {
+      await authAPI.deleteUser(selectedSupervisor.id);
+      setSupervisores(supervisores.filter(s => s.id !== selectedSupervisor.id));
+      setShowDeleteModal(false);
+      setShowDetailsModal(false);
+      setSelectedSupervisor(null);
+    } catch (err) {
+      console.error('Error deleting supervisor:', err);
+      alert('Error al eliminar el supervisor');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const getInitials = fullName => {
+    const parts = fullName?.trim().split(' ').filter(Boolean) || [];
     return parts.length > 1
       ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-      : (parts[0]?.[0] || 'S').toUpperCase()
-  }
+      : (parts[0]?.[0] || 'S').toUpperCase();
+  };
 
-  const getStatusBadge = (isActive) => {
-    return isActive 
+  const getStatusBadge = isActive => {
+    return isActive
       ? { bg: 'bg-green-100', text: 'text-green-800', label: 'DISPONIBLE' }
-      : { bg: 'bg-red-100', text: 'text-red-800', label: 'VACACIONES' }
-  }
+      : { bg: 'bg-red-100', text: 'text-red-800', label: 'VACACIONES' };
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <p className="text-gray-500">Cargando supervisores...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -131,9 +139,11 @@ export default function EquiposSection({ user, onNavigate }) {
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-3xl font-bold">Gestión de Supervisores</h2>
-          <p className="text-gray-500 mt-1">Control y seguimiento del personal de obra asignado a proyectos activos.</p>
+          <p className="text-gray-500 mt-1">
+            Control y seguimiento del personal de obra asignado a proyectos activos.
+          </p>
         </div>
-        <button 
+        <button
           onClick={() => onNavigate('/register')}
           className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold flex items-center gap-2"
         >
@@ -149,9 +159,9 @@ export default function EquiposSection({ user, onNavigate }) {
               type="text"
               placeholder="Buscar por nombre o especialidad (ej. Estructuras, Intereses)..."
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setCurrentPage(1)
+              onChange={e => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
               }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -162,24 +172,26 @@ export default function EquiposSection({ user, onNavigate }) {
           {/* Department Filter */}
           <select
             value={selectedDepartment}
-            onChange={(e) => {
-              setSelectedDepartment(e.target.value)
-              setCurrentPage(1)
+            onChange={e => {
+              setSelectedDepartment(e.target.value);
+              setCurrentPage(1);
             }}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
             <option value="all">Especialidad: Todas</option>
             {departments.map(dept => (
-              <option key={dept} value={dept}>{dept}</option>
+              <option key={dept} value={dept}>
+                {dept}
+              </option>
             ))}
           </select>
 
           {/* Status Filter */}
           <select
             value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value)
-              setCurrentPage(1)
+            onChange={e => {
+              setSelectedStatus(e.target.value);
+              setCurrentPage(1);
             }}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
@@ -207,24 +219,40 @@ export default function EquiposSection({ user, onNavigate }) {
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">NOMBRE</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">ESPECIALIDAD</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">PROYECTOS ACTIVOS</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">UBICACIÓN ACTUAL</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">ESTADO</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">ACCIÓN</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    NOMBRE
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    ESPECIALIDAD
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    PROYECTOS ACTIVOS
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    UBICACIÓN ACTUAL
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    ESTADO
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    ACCIÓN
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedSupervisores.map(supervisor => {
-                  const status = getStatusBadge(supervisor.is_active)
+                  const status = getStatusBadge(supervisor.is_active);
                   return (
                     <tr key={supervisor.id} className="border-b hover:bg-gray-50 transition">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
                             {supervisor.profile_image ? (
-                              <img src={supervisor.profile_image} alt={supervisor.full_name} className="w-full h-full object-cover" />
+                              <img
+                                src={supervisor.profile_image}
+                                alt={supervisor.full_name}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               getInitials(supervisor.full_name)
                             )}
@@ -253,15 +281,17 @@ export default function EquiposSection({ user, onNavigate }) {
                         <span className="text-gray-600">No disponible</span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-block text-xs font-semibold px-3 py-1 rounded ${status.bg} ${status.text}`}>
+                        <span
+                          className={`inline-block text-xs font-semibold px-3 py-1 rounded ${status.bg} ${status.text}`}
+                        >
                           {status.label}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <button
                           onClick={() => {
-                            setSelectedSupervisor(supervisor)
-                            setShowDetailsModal(true)
+                            setSelectedSupervisor(supervisor);
+                            setShowDetailsModal(true);
                           }}
                           className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-semibold transition"
                         >
@@ -269,7 +299,7 @@ export default function EquiposSection({ user, onNavigate }) {
                         </button>
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -278,7 +308,9 @@ export default function EquiposSection({ user, onNavigate }) {
           {/* Pagination */}
           <div className="px-6 py-4 border-t bg-gray-50 flex justify-between items-center">
             <p className="text-sm text-gray-600">
-              MOSTRANDO {filteredSupervisores.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} DE {filteredSupervisores.length} SUPERVISORES
+              MOSTRANDO{' '}
+              {filteredSupervisores.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} DE{' '}
+              {filteredSupervisores.length} SUPERVISORES
             </p>
             <div className="flex gap-2">
               <button
@@ -309,20 +341,26 @@ export default function EquiposSection({ user, onNavigate }) {
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white text-xl font-bold overflow-hidden">
                   {selectedSupervisor.profile_image ? (
-                    <img src={selectedSupervisor.profile_image} alt={selectedSupervisor.full_name} className="w-full h-full object-cover" />
+                    <img
+                      src={selectedSupervisor.profile_image}
+                      alt={selectedSupervisor.full_name}
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     getInitials(selectedSupervisor.full_name)
                   )}
                 </div>
                 <div>
                   <h3 className="text-lg font-bold">{selectedSupervisor.full_name}</h3>
-                  <p className="text-sm text-gray-500">{selectedSupervisor.department || 'Sin departamento'}</p>
+                  <p className="text-sm text-gray-500">
+                    {selectedSupervisor.department || 'Sin departamento'}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => {
-                  setShowDetailsModal(false)
-                  setSelectedSupervisor(null)
+                  setShowDetailsModal(false);
+                  setSelectedSupervisor(null);
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -340,15 +378,19 @@ export default function EquiposSection({ user, onNavigate }) {
               )}
               {selectedSupervisor.phone && (
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-500">📱</span>
+                  <span className="text-gray-500"></span>
                   <span className="text-gray-700">{selectedSupervisor.phone}</span>
                 </div>
               )}
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-500">💼</span>
-                <span className={`inline-block px-3 py-1 rounded text-xs font-semibold ${
-                  selectedSupervisor.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
+                <span className="text-gray-500"></span>
+                <span
+                  className={`inline-block px-3 py-1 rounded text-xs font-semibold ${
+                    selectedSupervisor.is_active
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}
+                >
                   {selectedSupervisor.is_active ? 'Activo' : 'Inactivo'}
                 </span>
               </div>
@@ -372,7 +414,7 @@ export default function EquiposSection({ user, onNavigate }) {
                 disabled={actionLoading}
                 className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-semibold transition disabled:bg-red-50"
               >
-                🗑️ Eliminar Permanentemente
+                Eliminar Permanentemente
               </button>
             </div>
           </div>
@@ -389,5 +431,5 @@ export default function EquiposSection({ user, onNavigate }) {
         />
       )}
     </div>
-  )
+  );
 }

@@ -1,65 +1,76 @@
-import { useMemo } from 'react'
+import { useMemo } from 'react';
 
 export default function ProjectOverviewCard({ project }) {
   const calculateProgress = useMemo(() => {
     // Calcular progreso basado en el estado del proyecto
     const statusProgress = {
-      'planning': 25,
+      planning: 25,
       'in-progress': 65,
-      'completed': 100
+      completed: 100
+    };
+    return statusProgress[project.status] || 0;
+  }, [project.status]);
+
+  const getStatusColor = status => {
+    switch (status) {
+      case 'planning':
+        return 'bg-blue-50 text-blue-700';
+      case 'in-progress':
+        return 'bg-orange-50 text-orange-700';
+      case 'completed':
+        return 'bg-green-50 text-green-700';
+      default:
+        return 'bg-gray-50 text-gray-700';
     }
-    return statusProgress[project.status] || 0
-  }, [project.status])
+  };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'planning': return 'bg-blue-50 text-blue-700'
-      case 'in-progress': return 'bg-orange-50 text-orange-700'
-      case 'completed': return 'bg-green-50 text-green-700'
-      default: return 'bg-gray-50 text-gray-700'
+  const getStatusLabel = status => {
+    switch (status) {
+      case 'planning':
+        return 'Planeación';
+      case 'in-progress':
+        return 'En Progreso';
+      case 'completed':
+        return 'Completado';
+      default:
+        return 'Desconocido';
     }
-  }
+  };
 
-  const getStatusLabel = (status) => {
-    switch(status) {
-      case 'planning': return 'Planeación'
-      case 'in-progress': return 'En Progreso'
-      case 'completed': return 'Completado'
-      default: return 'Desconocido'
+  const getProgressColor = progress => {
+    if (progress < 33) {
+      return 'bg-red-500';
     }
-  }
+    if (progress < 66) {
+      return 'bg-yellow-500';
+    }
+    return 'bg-green-500';
+  };
 
-  const getProgressColor = (progress) => {
-    if (progress < 33) return 'bg-red-500'
-    if (progress < 66) return 'bg-yellow-500'
-    return 'bg-green-500'
-  }
-
-  const getSupervisorInitials = (supervisors) => {
-    if (!supervisors || supervisors.length === 0) return []
+  const getSupervisorInitials = supervisors => {
+    if (!supervisors || supervisors.length === 0) {
+      return [];
+    }
     return supervisors.slice(0, 3).map(sup => {
-      const parts = sup.full_name?.trim().split(' ').filter(Boolean) || []
+      const parts = sup.full_name?.trim().split(' ').filter(Boolean) || [];
       return {
-        initials: parts.length > 1
-          ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
-          : (parts[0]?.[0] || 'S').toUpperCase(),
+        initials:
+          parts.length > 1
+            ? `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+            : (parts[0]?.[0] || 'S').toUpperCase(),
         name: sup.full_name
-      }
-    })
-  }
+      };
+    });
+  };
 
-  const supervisors = getSupervisorInitials(project.supervisors || [])
+  const supervisors = getSupervisorInitials(project.supervisors || []);
 
   return (
     <div className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden">
       {/* Project Image */}
       <div className="relative h-32 bg-gradient-to-r from-blue-400 to-blue-600 overflow-hidden">
         {project.image ? (
-          <img 
-            src={project.image} 
-            alt={project.name} 
-            className="w-full h-full object-cover"
-          />
+          <img src={project.image} alt={project.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl text-white opacity-30">
             🏗️
@@ -72,7 +83,9 @@ export default function ProjectOverviewCard({ project }) {
         {/* Title and Status */}
         <div className="flex justify-between items-start mb-3">
           <h3 className="font-bold text-lg flex-1 line-clamp-2">{project.name}</h3>
-          <span className={`text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ml-2 ${getStatusColor(project.status)}`}>
+          <span
+            className={`text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap ml-2 ${getStatusColor(project.status)}`}
+          >
             {getStatusLabel(project.status)}
           </span>
         </div>
@@ -80,7 +93,9 @@ export default function ProjectOverviewCard({ project }) {
         {/* Supervisor Info */}
         {project.supervisors && project.supervisors.length > 0 && (
           <div className="mb-4 pb-4 border-b">
-            <p className="text-xs text-gray-500 mb-2">Supervisor{project.supervisors.length > 1 ? 'es' : ''}</p>
+            <p className="text-xs text-gray-500 mb-2">
+              Supervisor{project.supervisors.length > 1 ? 'es' : ''}
+            </p>
             <p className="text-sm font-medium">{project.supervisors[0].full_name}</p>
             {project.supervisors.length > 1 && (
               <p className="text-xs text-gray-500">+ {project.supervisors.length - 1} más</p>
@@ -95,7 +110,7 @@ export default function ProjectOverviewCard({ project }) {
             <p className="text-sm font-bold text-gray-800">{calculateProgress}%</p>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-            <div 
+            <div
               className={`h-full transition-all duration-500 ${getProgressColor(calculateProgress)}`}
               style={{ width: `${calculateProgress}%` }}
             />
@@ -144,5 +159,5 @@ export default function ProjectOverviewCard({ project }) {
         </div>
       </div>
     </div>
-  )
+  );
 }

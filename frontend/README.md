@@ -67,16 +67,17 @@ src/
 
 ## Rutas
 
-| Ruta | Descripción | Requerido |
-|------|-------------|-----------|
-| `/login` | Login | - |
-| `/register` | Crear cuenta | - |
-| `/dashboard` | Panel usuario | Auth (user) |
-| `/admin` | Panel admin | Auth (admin) |
+| Ruta         | Descripción   | Requerido    |
+| ------------ | ------------- | ------------ |
+| `/login`     | Login         | -            |
+| `/register`  | Crear cuenta  | -            |
+| `/dashboard` | Panel usuario | Auth (user)  |
+| `/admin`     | Panel admin   | Auth (admin) |
 
 ## API y Autenticación
 
 El servicio `api.js` gestiona:
+
 - **POST /auth/register** — crear usuario
 - **POST /auth/login** — login y obtén JWT
 - **PATCH /auth/:id/active** — activar/desactivar (admin)

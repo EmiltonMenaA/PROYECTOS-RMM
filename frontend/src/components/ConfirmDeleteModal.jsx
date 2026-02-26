@@ -1,9 +1,7 @@
-import { useState } from 'react'
-
 export default function ConfirmDeleteModal({ userName, onConfirm, onCancel, isLoading = false }) {
   const handleConfirm = async () => {
-    await onConfirm()
-  }
+    await onConfirm();
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -12,12 +10,11 @@ export default function ConfirmDeleteModal({ userName, onConfirm, onCancel, isLo
           <span className="text-red-600 text-xl">⚠️</span>
         </div>
 
-        <h3 className="text-lg font-bold text-gray-900 text-center mb-2">
-          Eliminar Supervisor
-        </h3>
+        <h3 className="text-lg font-bold text-gray-900 text-center mb-2">Eliminar Supervisor</h3>
 
         <p className="text-gray-600 text-center mb-6">
-          ¿Estás seguro de que deseas eliminar a <strong>{userName}</strong>? Esta acción no se puede deshacer.
+          ¿Estás seguro de que deseas eliminar a <strong>{userName}</strong>? Esta acción no se
+          puede deshacer.
         </p>
 
         <div className="space-y-3">
@@ -38,5 +35,5 @@ export default function ConfirmDeleteModal({ userName, onConfirm, onCancel, isLo
         </div>
       </div>
     </div>
-  )
+  );
 }

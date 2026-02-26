@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
-import { projectsAPI, authAPI } from '../api'
+import { useState, useEffect } from 'react';
+import { projectsAPI, authAPI } from '../api';
 
-export default function ProyectosSection({ user }) {
-  const [projects, setProjects] = useState([])
-  const [supervisores, setSupervisores] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showCreateProject, setShowCreateProject] = useState(false)
-  const [statusFilter, setStatusFilter] = useState('in-progress')
+export default function ProyectosSection({ user: _user }) {
+  const [projects, setProjects] = useState([]);
+  const [supervisores, setSupervisores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('in-progress');
   const [projectForm, setProjectForm] = useState({
     name: '',
     location: '',
@@ -14,35 +14,35 @@ export default function ProyectosSection({ user }) {
     startDate: '',
     endDate: '',
     contract_value: ''
-  })
+  });
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const [projectsRes, supervisoresRes] = await Promise.all([
         projectsAPI.getProjects(),
         authAPI.getSupervisors()
-      ])
-      setProjects(projectsRes.data.projects || [])
-      setSupervisores(supervisoresRes.data.users || [])
+      ]);
+      setProjects(projectsRes.data.projects || []);
+      setSupervisores(supervisoresRes.data.users || []);
     } catch (err) {
-      console.error('Error loading data:', err)
+      console.error('Error loading data:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleProjectChange = (e) => {
-    const { name, value } = e.target
-    setProjectForm(prev => ({ ...prev, [name]: value }))
-  }
+  const handleProjectChange = e => {
+    const { name, value } = e.target;
+    setProjectForm(prev => ({ ...prev, [name]: value }));
+  };
 
-  const handleCreateProject = async (e) => {
-    e.preventDefault()
+  const handleCreateProject = async e => {
+    e.preventDefault();
     try {
       await projectsAPI.createProject({
         name: projectForm.name,
@@ -52,8 +52,8 @@ export default function ProyectosSection({ user }) {
         start_date: projectForm.startDate || null,
         end_date: projectForm.endDate || null,
         contract_value: projectForm.contract_value || null
-      })
-      setShowCreateProject(false)
+      });
+      setShowCreateProject(false);
       setProjectForm({
         name: '',
         location: '',
@@ -61,63 +61,65 @@ export default function ProyectosSection({ user }) {
         startDate: '',
         endDate: '',
         contract_value: ''
-      })
-      await loadData()
+      });
+      await loadData();
     } catch (err) {
-      console.error('Error creating project:', err)
-      alert('Error al crear el proyecto')
+      console.error('Error creating project:', err);
+      alert('Error al crear el proyecto');
     }
-  }
+  };
 
   const handleAssignSupervisor = async (projectId, supervisorId) => {
     try {
-      await projectsAPI.assignSupervisor(projectId, supervisorId)
-      await loadData()
+      await projectsAPI.assignSupervisor(projectId, supervisorId);
+      await loadData();
     } catch (err) {
-      console.error('Error assigning supervisor:', err)
-      alert('Error al asignar supervisor')
+      console.error('Error assigning supervisor:', err);
+      alert('Error al asignar supervisor');
     }
-  }
+  };
 
   const handleRemoveSupervisor = async (projectId, supervisorId) => {
     try {
-      await projectsAPI.removeSupervisor(projectId, supervisorId)
-      await loadData()
+      await projectsAPI.removeSupervisor(projectId, supervisorId);
+      await loadData();
     } catch (err) {
-      console.error('Error removing supervisor:', err)
-      alert('Error al desasignar supervisor')
+      console.error('Error removing supervisor:', err);
+      alert('Error al desasignar supervisor');
     }
-  }
+  };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = status => {
     const badges = {
-      'planning': 'bg-purple-100 text-purple-800',
+      planning: 'bg-purple-100 text-purple-800',
       'in-progress': 'bg-blue-100 text-blue-800',
-      'completed': 'bg-green-100 text-green-800'
-    }
-    return badges[status] || 'bg-gray-100 text-gray-800'
-  }
+      completed: 'bg-green-100 text-green-800'
+    };
+    return badges[status] || 'bg-gray-100 text-gray-800';
+  };
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = status => {
     const labels = {
-      'planning': 'PLANEACIÓN',
+      planning: 'PLANEACIÓN',
       'in-progress': 'EN PROGRESO',
-      'completed': 'COMPLETADO'
-    }
-    return labels[status] || status
-  }
+      completed: 'COMPLETADO'
+    };
+    return labels[status] || status;
+  };
 
   const filteredProjects = projects.filter(p => {
-    if (statusFilter === 'all') return true
-    return p.status === statusFilter
-  })
+    if (statusFilter === 'all') {
+      return true;
+    }
+    return p.status === statusFilter;
+  });
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <p className="text-gray-500">Cargando proyectos...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -185,7 +187,8 @@ export default function ProyectosSection({ user }) {
       {statusFilter === 'in-progress' && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800 font-semibold">
-            Mostrando proyectos activos. Total: <span className="font-bold">{filteredProjects.length}</span>
+            Mostrando proyectos activos. Total:{' '}
+            <span className="font-bold">{filteredProjects.length}</span>
           </p>
         </div>
       )}
@@ -209,14 +212,19 @@ export default function ProyectosSection({ user }) {
       ) : (
         <div className="space-y-4">
           {filteredProjects.map(project => (
-            <div key={project.id} className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
+            <div
+              key={project.id}
+              className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition"
+            >
               {/* Header del Proyecto */}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex-1">
                   <h3 className="text-xl font-bold">{project.name}</h3>
                   <p className="text-gray-600 text-sm">{project.location}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(project.status)}`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(project.status)}`}
+                >
                   {getStatusLabel(project.status)}
                 </span>
               </div>
@@ -252,7 +260,9 @@ export default function ProyectosSection({ user }) {
                 )}
                 <div>
                   <p className="text-xs text-gray-500 font-semibold">SUPERVISORES</p>
-                  <p className="font-bold text-sm text-gray-900">{project.supervisors?.length || 0}</p>
+                  <p className="font-bold text-sm text-gray-900">
+                    {project.supervisors?.length || 0}
+                  </p>
                 </div>
               </div>
 
@@ -262,7 +272,10 @@ export default function ProyectosSection({ user }) {
                 {project.supervisors && project.supervisors.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {project.supervisors.map(sup => (
-                      <div key={sup.id} className="flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                      <div
+                        key={sup.id}
+                        className="flex items-center justify-between bg-blue-50 p-3 rounded-lg"
+                      >
                         <div>
                           <p className="font-semibold text-sm">{sup.name}</p>
                           <p className="text-xs text-gray-600">{sup.specialty}</p>
@@ -284,7 +297,7 @@ export default function ProyectosSection({ user }) {
               {/* Asignar Supervisor */}
               <div className="flex gap-2 items-center">
                 <select
-                  onChange={(e) => {
+                  onChange={e => {
                     if (e.target.value) {
                       const supervisorId = parseInt(e.target.value);
                       if (project.supervisors?.some(s => s.id === supervisorId)) {
@@ -298,13 +311,13 @@ export default function ProyectosSection({ user }) {
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Asignar supervisor...</option>
-                  {supervisores.filter(sup => 
-                    !project.supervisors?.some(ps => ps.id === sup.id)
-                  ).map(sup => (
-                    <option key={sup.id} value={sup.id}>
-                      {sup.full_name} ({sup.department})
-                    </option>
-                  ))}
+                  {supervisores
+                    .filter(sup => !project.supervisors?.some(ps => ps.id === sup.id))
+                    .map(sup => (
+                      <option key={sup.id} value={sup.id}>
+                        {sup.full_name} ({sup.department})
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -422,5 +435,5 @@ export default function ProyectosSection({ user }) {
         </div>
       )}
     </div>
-  )
+  );
 }

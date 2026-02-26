@@ -81,7 +81,7 @@ Creating admin user "admin"...
 ✓ Admin created: { id: 1, username: 'admin', role: 'admin' }
   Username: admin
   Password: Admin123!
-  ⚠️  CHANGE THIS PASSWORD IN PRODUCTION!
+    CHANGE THIS PASSWORD IN PRODUCTION!
 
 ✓ Setup complete!
 ```

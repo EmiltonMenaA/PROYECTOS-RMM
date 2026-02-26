@@ -11,7 +11,9 @@ router.get('/profile', requireAuth, async (req, res) => {
       'SELECT id, username, role, full_name, email, phone, department, profile_image FROM users WHERE id = $1',
       [req.user.id]
     );
-    if (result.rowCount === 0) return res.status(404).json({ error: 'User not found' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
     res.json({ user: result.rows[0] });
   } catch (err) {
     console.error(err);
@@ -25,9 +27,18 @@ router.put('/profile', requireAuth, async (req, res) => {
   try {
     const result = await db.query(
       'UPDATE users SET full_name = $1, email = $2, phone = $3, department = $4, profile_image = $5 WHERE id = $6 RETURNING id, username, role, full_name, email, phone, department, profile_image',
-      [full_name || null, email || null, phone || null, department || null, profile_image || null, req.user.id]
+      [
+        full_name || null,
+        email || null,
+        phone || null,
+        department || null,
+        profile_image || null,
+        req.user.id
+      ]
     );
-    if (result.rowCount === 0) return res.status(404).json({ error: 'User not found' });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
     res.json({ user: result.rows[0] });
   } catch (err) {
     console.error(err);
@@ -39,7 +50,7 @@ router.put('/profile', requireAuth, async (req, res) => {
 router.patch('/:userId', requireAuth, async (req, res) => {
   const { userId } = req.params;
   const { full_name, email, phone, department, profile_image } = req.body;
-  
+
   try {
     // User can only update their own profile unless they're admin
     if (req.user.id !== parseInt(userId) && req.user.role !== 'admin') {
@@ -48,7 +59,14 @@ router.patch('/:userId', requireAuth, async (req, res) => {
 
     const result = await db.query(
       'UPDATE users SET full_name = $1, email = $2, phone = $3, department = $4, profile_image = $5 WHERE id = $6 RETURNING id, username, role, full_name, email, phone, department, profile_image, is_active',
-      [full_name || null, email || null, phone || null, department || null, profile_image || null, userId]
+      [
+        full_name || null,
+        email || null,
+        phone || null,
+        department || null,
+        profile_image || null,
+        userId
+      ]
     );
 
     if (result.rowCount === 0) {

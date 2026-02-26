@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { authAPI } from '../api'
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../api';
 
 export default function Register() {
-  const navigate = useNavigate()
-  const [user, setUser] = useState(null)
-  const [profileImage, setProfileImage] = useState(() => localStorage.getItem('profile_image') || '')
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const profileImage = localStorage.getItem('profile_image') || '';
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -15,38 +15,38 @@ export default function Register() {
     email: '',
     id_number: '',
     phone: ''
-  })
-  const [profilePhoto, setProfilePhoto] = useState('')
-  const [selectedSpecialties, setSelectedSpecialties] = useState(['Estructuras', 'Interiores'])
-  const specialtyOptions = ['Cimentación', 'Instalaciones', 'Seguridad', 'Diseño Eco']
-  const [supervisores, setSupervisores] = useState([])
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [loadingSupervisores, setLoadingSupervisores] = useState(true)
+  });
+  const [profilePhoto, setProfilePhoto] = useState('');
+  const [selectedSpecialties, setSelectedSpecialties] = useState(['Estructuras', 'Interiores']);
+  const specialtyOptions = ['Cimentación', 'Instalaciones', 'Seguridad', 'Diseño Eco'];
+  const [supervisores, setSupervisores] = useState([]);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loadingSupervisores, setLoadingSupervisores] = useState(true);
 
   // Verificar si el usuario actual es admin
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
+    const savedUser = localStorage.getItem('user');
     if (!savedUser) {
-      setError('Solo administradores pueden crear supervisores')
-      setTimeout(() => navigate('/login'), 2000)
-      return
+      setError('Solo administradores pueden crear supervisores');
+      setTimeout(() => navigate('/login'), 2000);
+      return;
     }
-    const parsedUser = JSON.parse(savedUser)
+    const parsedUser = JSON.parse(savedUser);
     if (parsedUser.role !== 'admin') {
-      setError('Solo administradores pueden crear supervisores')
-      setTimeout(() => navigate('/dashboard'), 2000)
-      return
+      setError('Solo administradores pueden crear supervisores');
+      setTimeout(() => navigate('/dashboard'), 2000);
+      return;
     }
-    setUser(parsedUser)
-    loadSupervisores()
-  }, [navigate])
+    setUser(parsedUser);
+    loadSupervisores();
+  }, [navigate]);
 
   const loadSupervisores = async () => {
-    setLoadingSupervisores(true)
+    setLoadingSupervisores(true);
     try {
-      const { data } = await authAPI.getSupervisors()
+      const { data } = await authAPI.getSupervisors();
       const supervisoresList = data.users.map(u => ({
         id: u.id,
         nombre: u.full_name,
@@ -54,66 +54,70 @@ export default function Register() {
         email: u.email,
         proyectos: 0,
         estado: u.is_active ? 'Disponible' : 'Inactivo'
-      }))
-      setSupervisores(supervisoresList)
+      }));
+      setSupervisores(supervisoresList);
     } catch (err) {
-      console.error('Error loading supervisores:', err)
-      setSupervisores([])
+      console.error('Error loading supervisores:', err);
+      setSupervisores([]);
     } finally {
-      setLoadingSupervisores(false)
+      setLoadingSupervisores(false);
     }
-  }
+  };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      setProfilePhoto(event.target.result)
+  const handlePhotoUpload = e => {
+    const file = e.target.files[0];
+    if (!file) {
+      return;
     }
-    reader.readAsDataURL(file)
-  }
+    const reader = new FileReader();
+    reader.onload = event => {
+      setProfilePhoto(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
-  const toggleSpecialty = (label) => {
+  const toggleSpecialty = label => {
     setSelectedSpecialties(prev =>
       prev.includes(label) ? prev.filter(item => item !== label) : [...prev, label]
-    )
-  }
+    );
+  };
 
-  const handleSubmit = async (e) => {
-    if (e?.preventDefault) e.preventDefault()
-    setError('')
-    setSuccess('')
+  const handleSubmit = async e => {
+    if (e?.preventDefault) {
+      e.preventDefault();
+    }
+    setError('');
+    setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden')
-      return
+      setError('Las contraseñas no coinciden');
+      return;
     }
     if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
-      return
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      const usernameValue = formData.email?.trim() || formData.username.trim()
+      const usernameValue = formData.email?.trim() || formData.username.trim();
       if (!usernameValue) {
-        setError('El correo electrónico es obligatorio')
-        setLoading(false)
-        return
+        setError('El correo electrónico es obligatorio');
+        setLoading(false);
+        return;
       }
       await authAPI.register(usernameValue, formData.password, formData.full_name, formData.role, {
         email: formData.email,
         phone: formData.phone,
         department: selectedSpecialties.join(', '),
         profile_image: profilePhoto
-      })
-      setSuccess('Supervisor creado exitosamente')
+      });
+      setSuccess('Supervisor creado exitosamente');
       setFormData({
         username: '',
         password: '',
@@ -123,18 +127,18 @@ export default function Register() {
         email: '',
         id_number: '',
         phone: ''
-      })
-      setProfilePhoto('')
-      setSelectedSpecialties(['Estructuras', 'Interiores'])
-      await loadSupervisores()
-      setTimeout(() => setSuccess(''), 3000)
+      });
+      setProfilePhoto('');
+      setSelectedSpecialties(['Estructuras', 'Interiores']);
+      await loadSupervisores();
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      const msg = err.response?.data?.error || 'Error al crear supervisor'
-      setError(msg)
+      const msg = err.response?.data?.error || 'Error al crear supervisor';
+      setError(msg);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
@@ -150,10 +154,20 @@ export default function Register() {
               key={tab}
               onClick={() => navigate('/dashboard')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                tab === 'equipos' ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600' : 'text-gray-700 hover:bg-gray-50'
+                tab === 'equipos'
+                  ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600'
+                  : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <span>{tab === 'dashboard' ? '📊' : tab === 'equipos' ? '👥' : tab === 'reportes' ? '📋' : '🏗️'}</span>
+              <span>
+                {tab === 'dashboard'
+                  ? '📊'
+                  : tab === 'equipos'
+                    ? '👥'
+                    : tab === 'reportes'
+                      ? '📋'
+                      : '🏗️'}
+              </span>
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
@@ -186,7 +200,14 @@ export default function Register() {
               <p className="text-xs text-gray-500">Admin del Sitio</p>
             </div>
           </div>
-          <button onClick={() => { localStorage.removeItem('auth_token'); localStorage.removeItem('user'); navigate('/login') }} className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm font-medium">
+          <button
+            onClick={() => {
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('user');
+              navigate('/login');
+            }}
+            className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm font-medium"
+          >
             Cerrar Sesión
           </button>
         </div>
@@ -196,17 +217,27 @@ export default function Register() {
       <main className="flex-1 overflow-auto">
         <div className="bg-white shadow-sm p-6 flex justify-between items-center">
           <div>
-            <p className="text-xs text-gray-500 mb-1">Admin  ›  Supervisores  ›  Añadir Nuevo</p>
+            <p className="text-xs text-gray-500 mb-1">Admin › Supervisores › Añadir Nuevo</p>
             <h2 className="text-2xl font-bold">Añadir Nuevo Supervisor</h2>
-            <p className="text-sm text-gray-500">Complete la información para registrar un nuevo profesional en la plataforma.</p>
+            <p className="text-sm text-gray-500">
+              Complete la información para registrar un nuevo profesional en la plataforma.
+            </p>
           </div>
           <button className="p-2 hover:bg-gray-100 rounded-lg">🔔</button>
         </div>
 
         <div className="p-8">
           <div className="max-w-4xl mx-auto space-y-6">
-            {error && <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">{error}</div>}
-            {success && <div className="p-3 bg-green-100 border border-green-400 text-green-700 rounded text-sm">{success}</div>}
+            {error && (
+              <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="p-3 bg-green-100 border border-green-400 text-green-700 rounded text-sm">
+                {success}
+              </div>
+            )}
 
             <div className="bg-white rounded-xl shadow p-6">
               <h3 className="text-xs font-semibold text-gray-500 mb-4">FOTOGRAFÍA DE PERFIL</h3>
@@ -220,9 +251,17 @@ export default function Register() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-gray-900">Subir una imagen</p>
-                  <p className="text-xs text-gray-500">Formatos admitidos: JPG, PNG. Tamaño máximo 2MB. Se recomienda una imagen cuadrada para mejor visualización.</p>
+                  <p className="text-xs text-gray-500">
+                    Formatos admitidos: JPG, PNG. Tamaño máximo 2MB. Se recomienda una imagen
+                    cuadrada para mejor visualización.
+                  </p>
                   <label className="inline-flex mt-2 text-xs font-semibold text-blue-600 cursor-pointer">
-                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
                     SELECCIONAR ARCHIVO
                   </label>
                 </div>
@@ -257,7 +296,9 @@ export default function Register() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-2">NÚMERO DE IDENTIFICACIÓN</label>
+                  <label className="block text-xs text-gray-500 mb-2">
+                    NÚMERO DE IDENTIFICACIÓN
+                  </label>
                   <input
                     type="text"
                     name="id_number"
@@ -315,7 +356,9 @@ export default function Register() {
 
             <div className="bg-white rounded-xl shadow p-6">
               <h3 className="text-xs font-semibold text-gray-500 mb-4">ESPECIALIDAD</h3>
-              <p className="text-xs text-gray-500 mb-4">Seleccione una o más especialidades para este supervisor.</p>
+              <p className="text-xs text-gray-500 mb-4">
+                Seleccione una o más especialidades para este supervisor.
+              </p>
               <div className="flex flex-wrap gap-2 mb-4">
                 {selectedSpecialties.map(item => (
                   <button
@@ -327,7 +370,10 @@ export default function Register() {
                     {item} ×
                   </button>
                 ))}
-                <button type="button" className="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
+                <button
+                  type="button"
+                  className="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold"
+                >
                   + Añadir especialidad
                 </button>
               </div>
@@ -363,9 +409,13 @@ export default function Register() {
                     <thead>
                       <tr className="border-b bg-gray-50">
                         <th className="px-4 py-3 text-left font-semibold text-gray-700">Nombre</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Especialidad</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                          Especialidad
+                        </th>
                         <th className="px-4 py-3 text-left font-semibold text-gray-700">Email</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Proyectos</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">
+                          Proyectos
+                        </th>
                         <th className="px-4 py-3 text-left font-semibold text-gray-700">Estado</th>
                       </tr>
                     </thead>
@@ -377,11 +427,15 @@ export default function Register() {
                           <td className="px-4 py-3 text-gray-700">{sup.email}</td>
                           <td className="px-4 py-3 text-gray-700">{sup.proyectos}</td>
                           <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              sup.estado === 'Disponible' ? 'bg-green-100 text-green-800' :
-                              sup.estado === 'Inactivo' ? 'bg-red-100 text-red-800' :
-                              'bg-yellow-100 text-yellow-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                sup.estado === 'Disponible'
+                                  ? 'bg-green-100 text-green-800'
+                                  : sup.estado === 'Inactivo'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
                               {sup.estado}
                             </span>
                           </td>
@@ -414,5 +468,5 @@ export default function Register() {
         </div>
       </main>
     </div>
-  )
+  );
 }

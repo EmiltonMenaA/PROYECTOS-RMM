@@ -59,7 +59,9 @@ router.get('/roles/:id', requireAuth, requireAdmin, async (req, res) => {
 router.post('/roles', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { name, description } = req.body;
-    if (!name) return res.status(400).json({ error: 'Name required' });
+    if (!name) {
+      return res.status(400).json({ error: 'Name required' });
+    }
 
     const result = await db.query(
       'INSERT INTO roles (name, description, is_custom) VALUES ($1, $2, true) RETURNING *',
@@ -130,9 +132,7 @@ router.delete('/roles/:id', requireAuth, requireAdmin, async (req, res) => {
 // GET all permissions
 router.get('/permissions', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const result = await db.query(
-      'SELECT * FROM permissions ORDER BY resource, action'
-    );
+    const result = await db.query('SELECT * FROM permissions ORDER BY resource, action');
     res.json({ permissions: result.rows });
   } catch (err) {
     console.error(err);
@@ -141,40 +141,50 @@ router.get('/permissions', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // ASSIGN permission to role
-router.post('/roles/:roleId/permissions/:permissionId', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { roleId, permissionId } = req.params;
+router.post(
+  '/roles/:roleId/permissions/:permissionId',
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { roleId, permissionId } = req.params;
 
-    const result = await db.query(
-      'INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2) RETURNING *',
-      [roleId, permissionId]
-    );
+      const result = await db.query(
+        'INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2) RETURNING *',
+        [roleId, permissionId]
+      );
 
-    res.status(201).json({ rolePermission: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    if (err.code === '23505') {
-      return res.status(409).json({ error: 'Permission already assigned to role' });
+      res.status(201).json({ rolePermission: result.rows[0] });
+    } catch (err) {
+      console.error(err);
+      if (err.code === '23505') {
+        return res.status(409).json({ error: 'Permission already assigned to role' });
+      }
+      res.status(500).json({ error: 'Could not assign permission' });
     }
-    res.status(500).json({ error: 'Could not assign permission' });
   }
-});
+);
 
 // REMOVE permission from role
-router.delete('/roles/:roleId/permissions/:permissionId', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { roleId, permissionId } = req.params;
+router.delete(
+  '/roles/:roleId/permissions/:permissionId',
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { roleId, permissionId } = req.params;
 
-    await db.query(
-      'DELETE FROM role_permissions WHERE role_id = $1 AND permission_id = $2',
-      [roleId, permissionId]
-    );
+      await db.query('DELETE FROM role_permissions WHERE role_id = $1 AND permission_id = $2', [
+        roleId,
+        permissionId
+      ]);
 
-    res.json({ message: 'Permission removed from role' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Could not remove permission' });
+      res.json({ message: 'Permission removed from role' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Could not remove permission' });
+    }
   }
-});
+);
 
 module.exports = router;

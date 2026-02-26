@@ -39,7 +39,9 @@ if (fs.existsSync(frontendBuild)) {
   app.use(express.static(frontendBuild));
   // SPA fallback: serve index.html for all non-API routes
   app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'Not found' });
+    }
     res.sendFile(path.join(frontendBuild, 'index.html'));
   });
 } else {
@@ -48,7 +50,9 @@ if (fs.existsSync(frontendBuild)) {
   if (fs.existsSync(publicDir)) {
     app.use(express.static(publicDir));
     app.get('*', (req, res) => {
-      if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found' });
+      if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'Not found' });
+      }
       // Try to serve index.html from public as fallback
       const indexPath = path.join(publicDir, 'index.html');
       if (fs.existsSync(indexPath)) {

@@ -30,7 +30,7 @@ router.get('/', async (req, res) => {
       ORDER BY r.created_at DESC
       LIMIT 100
     `);
-    
+
     // Rename summary to description for frontend compatibility
     const formattedReports = result.rows.map(report => ({
       id: report.id,
@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
       status: report.status || 'pending',
       photo_count: parseInt(report.photo_count) || 0
     }));
-    
+
     res.json({ reports: formattedReports });
   } catch (err) {
     console.error(err);
@@ -78,7 +78,13 @@ router.post('/', requireAuth, upload.array('photos', 10), async (req, res) => {
           const uploaded = await retry(() => storage.upload(file), 3, 500);
           const insert = await client.query(
             'INSERT INTO evidence_files (report_id, filename, filepath, url, uploaded_by) VALUES ($1, $2, $3, $4, $5) RETURNING id, filename, filepath, url, uploaded_at',
-            [report.id, uploaded.filename, uploaded.key || null, uploaded.url || null, author_id || null]
+            [
+              report.id,
+              uploaded.filename,
+              uploaded.key || null,
+              uploaded.url || null,
+              author_id || null
+            ]
           );
           savedFiles.push(insert.rows[0]);
         } catch (err) {

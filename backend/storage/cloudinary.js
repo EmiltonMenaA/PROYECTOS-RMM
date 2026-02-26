@@ -5,7 +5,9 @@ const fs = require('fs');
 cloudinary.config({ secure: true });
 
 async function upload(file) {
-  if (!file || !file.path) throw new Error('Invalid file');
+  if (!file || !file.path) {
+    throw new Error('Invalid file');
+  }
   const options = { folder: 'rmm' };
   const res = await cloudinary.uploader.upload(file.path, options);
   // remove temp file
@@ -14,7 +16,7 @@ async function upload(file) {
     url: res.secure_url,
     filename: file.originalname,
     provider: 'cloudinary',
-    key: res.public_id,
+    key: res.public_id
   };
 }
 

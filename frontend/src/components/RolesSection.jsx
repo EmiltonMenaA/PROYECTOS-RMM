@@ -1,168 +1,135 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react';
 
 export default function RolesSection() {
-  const [roles, setRoles] = useState([])
-  const [permissions, setPermissions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showDetailsModal, setShowDetailsModal] = useState(false)
-  const [selectedRole, setSelectedRole] = useState(null)
-  const [newRoleName, setNewRoleName] = useState('')
-  const [newRoleDesc, setNewRoleDesc] = useState('')
-  const [actionLoading, setActionLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [roles, setRoles] = useState([]);
+  const [permissions, setPermissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDesc, setNewRoleDesc] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
-  const token = localStorage.getItem('auth_token')
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+  const token = localStorage.getItem('auth_token');
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const [rolesRes, permsRes] = await Promise.all([
         fetch(`${API_BASE}/roles/roles`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         }),
         fetch(`${API_BASE}/roles/permissions`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         })
-      ])
+      ]);
 
       if (rolesRes.ok) {
-        const rolesData = await rolesRes.json()
-        setRoles(rolesData.roles || [])
+        const rolesData = await rolesRes.json();
+        setRoles(rolesData.roles || []);
       }
 
       if (permsRes.ok) {
-        const permsData = await permsRes.json()
-        setPermissions(permsData.permissions || [])
+        const permsData = await permsRes.json();
+        setPermissions(permsData.permissions || []);
       }
     } catch (err) {
-      console.error('Error loading roles:', err)
+      console.error('Error loading roles:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const filteredRoles = useMemo(() => {
-    return roles.filter(role =>
-      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (role.description && role.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-  }, [roles, searchTerm])
+    return roles.filter(
+      role =>
+        role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (role.description && role.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [roles, searchTerm]);
 
   const handleCreateRole = async () => {
     if (!newRoleName.trim()) {
-      alert('El nombre del rol es requerido')
-      return
+      alert('El nombre del rol es requerido');
+      return;
     }
 
-    setActionLoading(true)
+    setActionLoading(true);
     try {
       const res = await fetch(`${API_BASE}/roles/roles`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name: newRoleName,
           description: newRoleDesc || null
         })
-      })
+      });
 
       if (res.ok) {
-        const data = await res.json()
-        setRoles([...roles, data.role])
-        setNewRoleName('')
-        setNewRoleDesc('')
-        setShowCreateModal(false)
+        const data = await res.json();
+        setRoles([...roles, data.role]);
+        setNewRoleName('');
+        setNewRoleDesc('');
+        setShowCreateModal(false);
       } else {
-        alert('Error al crear el rol')
+        alert('Error al crear el rol');
       }
     } catch (err) {
-      console.error('Error:', err)
-      alert('Error al crear el rol')
+      console.error('Error:', err);
+      alert('Error al crear el rol');
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
+  };
 
   const handleDeleteRole = async () => {
     if (!selectedRole || !selectedRole.is_custom) {
-      alert('No se pueden eliminar roles predeterminados')
-      return
+      alert('No se pueden eliminar roles predeterminados');
+      return;
     }
 
-    if (!confirm(`¿Eliminar rol "${selectedRole.name}"?`)) return
+    if (!confirm(`¿Eliminar rol "${selectedRole.name}"?`)) {
+      return;
+    }
 
-    setActionLoading(true)
+    setActionLoading(true);
     try {
       const res = await fetch(`${API_BASE}/roles/roles/${selectedRole.id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (res.ok) {
-        setRoles(roles.filter(r => r.id !== selectedRole.id))
-        setShowDetailsModal(false)
-        setSelectedRole(null)
+        setRoles(roles.filter(r => r.id !== selectedRole.id));
+        setShowDetailsModal(false);
+        setSelectedRole(null);
       } else {
-        alert('Error al eliminar el rol')
+        alert('Error al eliminar el rol');
       }
     } catch (err) {
-      console.error('Error:', err)
-      alert('Error al eliminar el rol')
+      console.error('Error:', err);
+      alert('Error al eliminar el rol');
     } finally {
-      setActionLoading(false)
+      setActionLoading(false);
     }
-  }
-
-  const handleTogglePermission = async (permissionId, hasPermission) => {
-    if (!selectedRole) return
-
-    setActionLoading(true)
-    try {
-      const method = hasPermission ? 'DELETE' : 'POST'
-      const endpoint = hasPermission
-        ? `${API_BASE}/roles/roles/${selectedRole.id}/permissions/${permissionId}`
-        : `${API_BASE}/roles/roles/${selectedRole.id}/permissions/${permissionId}`
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-
-      if (res.ok) {
-        await loadData()
-        setSelectedRole(null)
-        setShowDetailsModal(false)
-      } else {
-        alert('Error al actualizar permiso')
-      }
-    } catch (err) {
-      console.error('Error:', err)
-      alert('Error al actualizar permiso')
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  const getRolePermissions = (roleId) => {
-    return permissions.filter(perm => {
-      return roles.find(r => r.id === roleId)?.permissions?.some(rp => rp.id === perm.id)
-    })
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <p className="text-gray-500">Cargando roles...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -171,7 +138,9 @@ export default function RolesSection() {
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-3xl font-bold">Gestión de Roles</h2>
-          <p className="text-gray-500 mt-1">Define roles y permisos para controlar el acceso a funcionalidades.</p>
+          <p className="text-gray-500 mt-1">
+            Define roles y permisos para controlar el acceso a funcionalidades.
+          </p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
@@ -187,7 +156,7 @@ export default function RolesSection() {
           type="text"
           placeholder="Buscar roles..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={e => setSearchTerm(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -204,18 +173,22 @@ export default function RolesSection() {
                 )}
               </div>
               {role.is_custom && (
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Personalizado</span>
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                  Personalizado
+                </span>
               )}
             </div>
 
             <div className="mb-4">
-              <p className="text-sm text-gray-600">Permisos: <span className="font-bold">{role.permission_count || 0}</span></p>
+              <p className="text-sm text-gray-600">
+                Permisos: <span className="font-bold">{role.permission_count || 0}</span>
+              </p>
             </div>
 
             <button
               onClick={() => {
-                setSelectedRole(role)
-                setShowDetailsModal(true)
+                setSelectedRole(role);
+                setShowDetailsModal(true);
               }}
               className="w-full px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm font-semibold transition"
             >
@@ -225,8 +198,8 @@ export default function RolesSection() {
             {role.is_custom && (
               <button
                 onClick={() => {
-                  setSelectedRole(role)
-                  handleDeleteRole()
+                  setSelectedRole(role);
+                  handleDeleteRole();
                 }}
                 disabled={actionLoading}
                 className="w-full mt-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm font-semibold transition disabled:opacity-50"
@@ -246,9 +219,9 @@ export default function RolesSection() {
               <h3 className="text-lg font-bold">Crear Nuevo Rol</h3>
               <button
                 onClick={() => {
-                  setShowCreateModal(false)
-                  setNewRoleName('')
-                  setNewRoleDesc('')
+                  setShowCreateModal(false);
+                  setNewRoleName('');
+                  setNewRoleDesc('');
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -258,21 +231,25 @@ export default function RolesSection() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre del rol *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Nombre del rol *
+                </label>
                 <input
                   type="text"
                   value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
+                  onChange={e => setNewRoleName(e.target.value)}
                   placeholder="ej. Editor de Proyectos"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Descripción</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  Descripción
+                </label>
                 <textarea
                   value={newRoleDesc}
-                  onChange={(e) => setNewRoleDesc(e.target.value)}
+                  onChange={e => setNewRoleDesc(e.target.value)}
                   placeholder="Descripción del rol..."
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -290,9 +267,9 @@ export default function RolesSection() {
               </button>
               <button
                 onClick={() => {
-                  setShowCreateModal(false)
-                  setNewRoleName('')
-                  setNewRoleDesc('')
+                  setShowCreateModal(false);
+                  setNewRoleName('');
+                  setNewRoleDesc('');
                 }}
                 className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold"
               >
@@ -311,8 +288,8 @@ export default function RolesSection() {
               <h3 className="text-lg font-bold">Permisos: {selectedRole.name}</h3>
               <button
                 onClick={() => {
-                  setShowDetailsModal(false)
-                  setSelectedRole(null)
+                  setShowDetailsModal(false);
+                  setSelectedRole(null);
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -323,15 +300,20 @@ export default function RolesSection() {
             {/* Permissions by Resource */}
             <div className="space-y-4">
               {['projects', 'users', 'reports', 'supervisors', 'dashboard'].map(resource => {
-                const resourcePerms = permissions.filter(p => p.resource === resource)
-                if (resourcePerms.length === 0) return null
+                const resourcePerms = permissions.filter(p => p.resource === resource);
+                if (resourcePerms.length === 0) {
+                  return null;
+                }
 
                 return (
                   <div key={resource} className="border rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 mb-3 capitalize">{resource}</h4>
                     <div className="space-y-2">
                       {resourcePerms.map(perm => (
-                        <label key={perm.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <label
+                          key={perm.id}
+                          className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        >
                           <input
                             type="checkbox"
                             disabled={actionLoading}
@@ -347,15 +329,15 @@ export default function RolesSection() {
                       ))}
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
 
             <div className="space-y-2 pt-4 border-t sticky bottom-0 bg-white">
               <button
                 onClick={() => {
-                  setShowDetailsModal(false)
-                  setSelectedRole(null)
+                  setShowDetailsModal(false);
+                  setSelectedRole(null);
                 }}
                 className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold"
               >
@@ -366,5 +348,5 @@ export default function RolesSection() {
         </div>
       )}
     </div>
-  )
+  );
 }

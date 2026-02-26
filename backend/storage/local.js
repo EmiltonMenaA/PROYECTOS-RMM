@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 
 async function upload(file) {
-  if (!file || !file.path) throw new Error('Invalid file');
+  if (!file || !file.path) {
+    throw new Error('Invalid file');
+  }
 
   const uploadsDir = path.join(__dirname, '..', 'uploads');
   if (!fs.existsSync(uploadsDir)) {
