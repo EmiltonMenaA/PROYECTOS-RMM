@@ -131,7 +131,7 @@ npm run dev
 - **Backend API**: http://localhost:4000
 - **Credenciales iniciales**: Las que configuraste en el paso de setup
 
-## 📊 Migraciones de Base de Datos
+##  Migraciones de Base de Datos
 
 Las migraciones se ejecutan automáticamente en orden:
 
@@ -186,6 +186,7 @@ Los tokens se almacenan en `localStorage` del navegador tras el login exitoso.
 - **[GUIA_RAPIDA.md](GUIA_RAPIDA.md)** - Guía rápida de uso
 - **[INSTRUCCIONES_EJECUCION.md](INSTRUCCIONES_EJECUCION.md)** - Pasos detallados de ejecución
 - **[MIGRACIONES.md](MIGRACIONES.md)** - Documentación de migraciones SQL
+- **[GIT_WORKFLOW.md](GIT_WORKFLOW.md)** - Estrategia de ramas, proceso de pull request y política de revisión
 - **[ESTANDARES_NOMBRAMIENTO.md](ESTANDARES_NOMBRAMIENTO.md)** - Estándares de nombramiento y convenciones
 - **[ANALISIS_ESTATICO.md](ANALISIS_ESTATICO.md)** - Análisis estático de código y estándares
 - **[CONFIGURACION_COMPLETADA.md](CONFIGURACION_COMPLETADA.md)** -  Guía de uso del formateo automático
@@ -265,10 +266,23 @@ Ejecuta las migraciones manualmente en orden desde `backend/migrations/`.
 
 ##  Flujo de Trabajo Git
 
+Este proyecto utiliza **GitHub Flow** con `main` como rama protegida.
+
+Resumen operativo:
+
+1. Crear rama desde `main` (`feature/*`, `fix/*`, `chore/*`).
+2. Desarrollar cambios y validar localmente.
+3. Abrir pull request hacia `main`.
+4. Esperar CI en estado exitoso (`Quality Checks` y `Security Checks`).
+5. Obtener al menos una aprobación de revisión.
+6. Realizar merge.
+
+Para la política completa de ramas y configuración de protección de `main`, consultar [GIT_WORKFLOW.md](GIT_WORKFLOW.md).
+
 ```bash
 git add .
 git commit -m "Descripción del cambio"
-git push origin main
+git push origin <tu-rama>
 ```
 
 ##  Equipo de Desarrollo
