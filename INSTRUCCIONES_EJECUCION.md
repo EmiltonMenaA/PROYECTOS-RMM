@@ -249,13 +249,3 @@ frontend/
 - Cambia `PORT=4000` en `.env` a otro puerto (ej: `PORT=5000`)
 - Luego accede a `http://localhost:5000`
 
-## Producción
-
-1. Cambia `JWT_SECRET` a una cadena aleatoria fuerte
-2. Cambia contraseña de admin (`UPDATE users SET password_hash = ... WHERE username = 'admin'`)
-3. Usa variables de entorno reales (no .env)
-4. Configura CORS apropiadamente
-5. Usa HTTPS obligatoriamente
-6. Configura credenciales de Cloudinary/S3 para uploads
-
-¡Listo! 🚀

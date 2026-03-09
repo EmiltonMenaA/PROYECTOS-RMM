@@ -74,7 +74,7 @@ copy .env.example .env
 - Usuario: `admin`
 - Contraseña: `Admin123!`
 
-⚠️ **Cambia esta contraseña en producción:**
+
 ```sql
 UPDATE users SET password_hash = ... WHERE username = 'admin';
 ```
