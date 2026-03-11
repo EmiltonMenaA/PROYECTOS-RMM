@@ -21,6 +21,16 @@ export default function ReportesSection({ projects }) {
   const [reportFilesLoading, setReportFilesLoading] = useState(false);
   const [reportFilesError, setReportFilesError] = useState('');
 
+  const isImageFile = filename => /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(filename || '');
+  const isVideoFile = filename => /\.(mp4|webm|ogg|mov|avi|mkv|m4v)$/i.test(filename || '');
+
+  const getFileUrl = file => {
+    if (!file?.url) {
+      return '';
+    }
+    return file.url.startsWith('/') ? `${backendBase}${file.url}` : file.url;
+  };
+
   useEffect(() => {
     loadReports();
   }, []);
@@ -55,12 +65,12 @@ export default function ReportesSection({ projects }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) {
-        throw new Error('No se pudieron cargar las fotos');
+        throw new Error('No se pudieron cargar los adjuntos');
       }
       const data = await res.json();
       setReportFiles(data.files || []);
     } catch (err) {
-      setReportFilesError(err.message || 'Error al cargar las fotos');
+      setReportFilesError(err.message || 'Error al cargar los adjuntos');
     } finally {
       setReportFilesLoading(false);
     }
@@ -346,27 +356,39 @@ export default function ReportesSection({ projects }) {
                   </div>
 
                   <div>
-                    <p className="text-xs text-gray-600 font-semibold mb-2">FOTOS</p>
+                    <p className="text-xs text-gray-600 font-semibold mb-2">ADJUNTOS</p>
                     {reportFilesLoading && (
-                      <p className="text-xs text-gray-500">Cargando fotos...</p>
+                      <p className="text-xs text-gray-500">Cargando adjuntos...</p>
                     )}
                     {!reportFilesLoading && reportFiles.length > 0 && (
                       <div className="grid grid-cols-2 gap-3">
                         {reportFiles.map(file => {
-                          const src = file.url
-                            ? file.url.startsWith('/')
-                              ? `${backendBase}${file.url}`
-                              : file.url
-                            : '';
+                          const src = getFileUrl(file);
+                          const isImage = isImageFile(file.filename);
+                          const isVideo = isVideoFile(file.filename);
                           return (
                             <div key={file.id} className="border border-gray-100 rounded-lg p-2">
-                              {src ? (
+                              {src && isImage ? (
                                 <a href={src} target="_blank" rel="noreferrer">
                                   <img
                                     src={src}
                                     alt={file.filename}
                                     className="w-full h-28 object-cover rounded"
                                   />
+                                </a>
+                              ) : src && isVideo ? (
+                                <video controls className="w-full h-28 object-cover rounded">
+                                  <source src={src} />
+                                  Tu navegador no soporta video.
+                                </video>
+                              ) : src ? (
+                                <a
+                                  href={src}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs text-blue-600 underline break-words"
+                                >
+                                  {file.filename}
                                 </a>
                               ) : (
                                 <p className="text-xs text-gray-600 break-words">{file.filename}</p>
@@ -377,7 +399,7 @@ export default function ReportesSection({ projects }) {
                       </div>
                     )}
                     {!reportFilesLoading && reportFiles.length === 0 && !reportFilesError && (
-                      <p className="text-xs text-gray-500">No hay fotos disponibles</p>
+                      <p className="text-xs text-gray-500">No hay adjuntos disponibles</p>
                     )}
                     {reportFilesError && <p className="text-xs text-red-600">{reportFilesError}</p>}
                   </div>
