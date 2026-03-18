@@ -8,7 +8,7 @@ async function upload(file) {
   if (!file || !file.path) {
     throw new Error('Invalid file');
   }
-  const options = { folder: 'rmm' };
+  const options = { folder: 'rmm', resource_type: 'auto' };
   const res = await cloudinary.uploader.upload(file.path, options);
   // remove temp file
   fs.unlink(file.path, () => {});

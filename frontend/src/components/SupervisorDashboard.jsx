@@ -45,6 +45,27 @@ export default function SupervisorDashboard({ user, onLogout }) {
   });
   const [profileSaving, setProfileSaving] = useState(false);
 
+  const isImageFile = filename => /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(filename || '');
+  const isVideoFile = filename => /\.(mp4|webm|ogg|mov|avi|mkv|m4v)$/i.test(filename || '');
+
+  const getFileUrl = file => {
+    if (!file?.url) {
+      return '';
+    }
+    return file.url.startsWith('/') ? `${backendBase}${file.url}` : file.url;
+  };
+
+  const addReportAttachments = fileList => {
+    const files = Array.from(fileList || []);
+    if (!files.length) {
+      return;
+    }
+    setReportPhotos(prev => {
+      const current = Array.isArray(prev) ? prev : Array.from(prev || []);
+      return [...current, ...files];
+    });
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
@@ -561,17 +582,24 @@ export default function SupervisorDashboard({ user, onLogout }) {
               ></textarea>
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-semibold">FOTOS</label>
+              <label className="text-xs text-gray-500 font-semibold">ADJUNTOS</label>
               <input
                 type="file"
                 multiple
-                accept="image/*"
-                onChange={e => setReportPhotos(e.target.files)}
+                accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                onChange={e => addReportAttachments(e.target.files)}
+                className="w-full mt-2 px-4 py-2 border border-gray-200 rounded-lg"
+              />
+              <input
+                type="file"
+                accept="image/*,video/*"
+                capture="environment"
+                onChange={e => addReportAttachments(e.target.files)}
                 className="w-full mt-2 px-4 py-2 border border-gray-200 rounded-lg"
               />
               {reportPhotos.length > 0 && (
                 <p className="text-xs text-green-600 mt-2">
-                  {reportPhotos.length} foto(s) seleccionadas
+                  {reportPhotos.length} adjunto(s) seleccionado(s)
                 </p>
               )}
             </div>
@@ -589,7 +617,7 @@ export default function SupervisorDashboard({ user, onLogout }) {
                   formData.append('details', reportForm.details);
 
                   for (let i = 0; i < reportPhotos.length; i++) {
-                    formData.append('photos', reportPhotos[i]);
+                    formData.append('attachments', reportPhotos[i]);
                   }
 
                   try {
@@ -709,28 +737,42 @@ export default function SupervisorDashboard({ user, onLogout }) {
               )}
 
               <div>
-                <p className="text-xs text-gray-600 font-semibold mb-2">FOTOS</p>
+                <p className="text-xs text-gray-600 font-semibold mb-2">ADJUNTOS</p>
                 <p className="text-sm font-medium mb-2">
-                  {selectedReport.photo_count} foto(s) subida(s)
+                  {selectedReport.photo_count} archivo(s) subido(s)
                 </p>
-                {reportFilesLoading && <p className="text-xs text-gray-500">Cargando fotos...</p>}
+                {reportFilesLoading && (
+                  <p className="text-xs text-gray-500">Cargando adjuntos...</p>
+                )}
                 {!reportFilesLoading && reportFiles.length > 0 && (
                   <div className="grid grid-cols-2 gap-3">
                     {reportFiles.map(file => {
-                      const src = file.url
-                        ? file.url.startsWith('/')
-                          ? `${backendBase}${file.url}`
-                          : file.url
-                        : '';
+                      const src = getFileUrl(file);
+                      const isImage = isImageFile(file.filename);
+                      const isVideo = isVideoFile(file.filename);
                       return (
                         <div key={file.id} className="border border-gray-100 rounded-lg p-2">
-                          {src ? (
+                          {src && isImage ? (
                             <a href={src} target="_blank" rel="noreferrer">
                               <img
                                 src={src}
                                 alt={file.filename}
                                 className="w-full h-28 object-cover rounded"
                               />
+                            </a>
+                          ) : src && isVideo ? (
+                            <video controls className="w-full h-28 object-cover rounded">
+                              <source src={src} />
+                              Tu navegador no soporta video.
+                            </video>
+                          ) : src ? (
+                            <a
+                              href={src}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-blue-600 underline break-words"
+                            >
+                              {file.filename}
                             </a>
                           ) : (
                             <p className="text-xs text-gray-600 break-words">{file.filename}</p>
@@ -741,7 +783,7 @@ export default function SupervisorDashboard({ user, onLogout }) {
                   </div>
                 )}
                 {!reportFilesLoading && reportFiles.length === 0 && !reportFilesError && (
-                  <p className="text-xs text-gray-500">No hay fotos disponibles</p>
+                  <p className="text-xs text-gray-500">No hay adjuntos disponibles</p>
                 )}
                 {reportFilesError && <p className="text-xs text-red-600">{reportFilesError}</p>}
               </div>
