@@ -201,12 +201,6 @@ export default function Home({ user }) {
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/register')}
-              className="px-6 py-3 bg-white text-blue-600 rounded font-semibold hover:bg-gray-100 transition"
-            >
-              Crear Cuenta
-            </button>
-            <button
               onClick={() => navigate('/login')}
               className="px-6 py-3 bg-blue-700 text-white rounded font-semibold hover:bg-blue-800 transition border-2 border-white"
             >
