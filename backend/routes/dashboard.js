@@ -69,7 +69,10 @@ async function buildDashboardSummary() {
     `
   );
 
-  const [metricsResult, recentReportsResult] = await Promise.all([metricsQuery, recentReportsQuery]);
+  const [metricsResult, recentReportsResult] = await Promise.all([
+    metricsQuery,
+    recentReportsQuery
+  ]);
 
   return {
     metrics: metricsResult.rows[0],

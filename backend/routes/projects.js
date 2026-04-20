@@ -136,7 +136,8 @@ router.get('/:id', async (req, res) => {
 
 // Create project
 router.post('/', requireAuth, async (req, res) => {
-  const { name, city, location, description, status, contract_value, start_date, end_date } = req.body;
+  const { name, city, location, description, status, contract_value, start_date, end_date } =
+    req.body;
   try {
     const result = await db.query(
       `INSERT INTO projects (name, city, location, description, status, contract_value, start_date, end_date) 
@@ -163,7 +164,8 @@ router.post('/', requireAuth, async (req, res) => {
 // Update project
 router.patch('/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
-  const { name, city, location, description, status, contract_value, start_date, end_date } = req.body;
+  const { name, city, location, description, status, contract_value, start_date, end_date } =
+    req.body;
 
   try {
     const existing = await db.query('SELECT id FROM projects WHERE id = $1 LIMIT 1', [id]);
