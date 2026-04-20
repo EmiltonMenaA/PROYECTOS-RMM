@@ -6,6 +6,7 @@ import { supervisorAPI } from '../api';
 
 export default function SupervisorDashboard({ user, onLogout }) {
   const navigate = useNavigate();
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/+$/, '');
   const backendBase = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(
     /\/api\/?$/,
     ''
@@ -107,8 +108,8 @@ export default function SupervisorDashboard({ user, onLogout }) {
     try {
       const token = localStorage.getItem('auth_token');
       const [projectsRes, reportsRes] = await Promise.all([
-        fetch('/api/projects', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/reports', { headers: { Authorization: `Bearer ${token}` } })
+        fetch(`${apiBase}/projects`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${apiBase}/reports`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       const projectsData = await projectsRes.json();
       const reportsData = await reportsRes.json();
@@ -140,7 +141,7 @@ export default function SupervisorDashboard({ user, onLogout }) {
     setReportFilesLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const res = await fetch(`/api/evidence/report/${reportId}`, {
+      const res = await fetch(`${apiBase}/evidence/report/${reportId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -621,13 +622,20 @@ export default function SupervisorDashboard({ user, onLogout }) {
                   }
 
                   try {
-                    const res = await fetch('/api/reports', {
+                    const res = await fetch(`${apiBase}/reports`, {
                       method: 'POST',
                       headers: { Authorization: `Bearer ${token}` },
                       body: formData
                     });
                     if (!res.ok) {
-                      throw new Error('Error al enviar');
+                      let message = 'Error al enviar';
+                      try {
+                        const errorData = await res.json();
+                        message = errorData?.error || errorData?.details || message;
+                      } catch {
+                        // Si no es JSON, mantenemos mensaje genérico.
+                      }
+                      throw new Error(message);
                     }
 
                     setReportForm({
