@@ -56,23 +56,78 @@ router.get('/', async (req, res) => {
 const storage = require('../storage');
 const { retry } = require('../utils/retry');
 const logger = require('../utils/logger');
+const notifications = require('../utils/notifications');
+
+const reportUpload = upload.fields([
+  { name: 'photos', maxCount: 30 },
+  { name: 'attachments', maxCount: 30 }
+]);
+
+function runReportUpload(req, res) {
+  return new Promise((resolve, reject) => {
+    reportUpload(req, res, err => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+}
 
 // Robust submit: use DB transaction and retries for uploads
-router.post('/', requireAuth, upload.array('photos', 10), async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
+  try {
+    await runReportUpload(req, res);
+  } catch (err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: `Upload inválido: ${err.message}` });
+    }
+    return res.status(400).json({ error: err.message || 'No se pudieron procesar los archivos' });
+  }
+
   const { project_id, summary, details } = req.body;
   const author_id = req.user && req.user.id;
-  const client = await db.pool.connect();
+
+  if (!author_id) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (!['supervisor', 'admin'].includes(req.user?.role)) {
+    return res.status(403).json({ error: 'Supervisor role required' });
+  }
+
+  if (!project_id) {
+    return res.status(400).json({ error: 'project_id is required' });
+  }
+
+  let client;
   try {
+    client = await db.pool.connect();
+    const assignment = await client.query(
+      'SELECT 1 FROM project_supervisors WHERE project_id = $1 AND user_id = $2 LIMIT 1',
+      [project_id, author_id]
+    );
+
+    // Admin can submit reports for any project; supervisors only for assigned projects.
+    if (req.user.role !== 'admin' && assignment.rowCount === 0) {
+      return res.status(403).json({ error: 'Project not assigned to this supervisor' });
+    }
+
     await client.query('BEGIN');
     const result = await client.query(
       'INSERT INTO reports (project_id, author_id, summary, details) VALUES ($1, $2, $3, $4) RETURNING id, project_id, author_id, summary, details, created_at',
-      [project_id || null, author_id || null, summary || null, details || null]
+      [project_id, author_id, summary || null, details || null]
     );
     const report = result.rows[0];
 
+    const incomingFiles = [
+      ...(Array.isArray(req.files?.photos) ? req.files.photos : []),
+      ...(Array.isArray(req.files?.attachments) ? req.files.attachments : [])
+    ];
+
     const savedFiles = [];
-    if (req.files && req.files.length) {
-      for (const file of req.files) {
+    if (incomingFiles.length) {
+      for (const file of incomingFiles) {
         try {
           // retry uploads up to 3 times with backoff
           const uploaded = await retry(() => storage.upload(file), 3, 500);
@@ -97,13 +152,46 @@ router.post('/', requireAuth, upload.array('photos', 10), async (req, res) => {
     }
 
     await client.query('COMMIT');
+
+    try {
+      const reportDetailResult = await db.query(
+        `
+          SELECT
+            r.id,
+            r.created_at,
+            r.status,
+            COALESCE(r.summary, r.details, '') AS description,
+            p.name AS project_name,
+            u.full_name AS author_name
+          FROM reports r
+          LEFT JOIN projects p ON p.id = r.project_id
+          LEFT JOIN users u ON u.id = r.author_id
+          WHERE r.id = $1
+          LIMIT 1
+        `,
+        [report.id]
+      );
+
+      if (reportDetailResult.rowCount > 0) {
+        notifications.notify('report.created', {
+          report: reportDetailResult.rows[0]
+        });
+      }
+    } catch (notifyErr) {
+      logger.error('Could not broadcast report notification', { err: notifyErr.message });
+    }
+
     res.json({ report, files: savedFiles });
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (client) {
+      await client.query('ROLLBACK');
+    }
     logger.error('Failed to create report', { err: err.message });
     res.status(500).json({ error: 'Could not create report' });
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 });
 

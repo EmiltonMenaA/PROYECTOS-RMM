@@ -6,10 +6,16 @@ import EquiposSection from './EquiposSection';
 import ReportesSection from './ReportesSection';
 import ProjectOverviewSection from './ProjectOverviewSection';
 import PermissionsSection from './PermissionsSection';
+import AdminSummaryPanel from './AdminSummaryPanel';
 
 export default function Dashboard({ user, onLogout }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [unreadNotifications, setUnreadNotifications] = useState(() => {
+    const raw = localStorage.getItem('admin_unread_notifications');
+    const parsed = Number.parseInt(raw || '0', 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  });
   const [profileImage, setProfileImage] = useState(
     () => localStorage.getItem('profile_image') || user?.profile_image || ''
   );
@@ -20,6 +26,29 @@ export default function Dashboard({ user, onLogout }) {
     setProfileImage(storedImage);
     loadProjects();
   }, [user]);
+
+  useEffect(() => {
+    const handleCountChanged = event => {
+      const nextCount = Number.parseInt(event?.detail?.count || 0, 10);
+      setUnreadNotifications(Number.isFinite(nextCount) && nextCount > 0 ? nextCount : 0);
+    };
+
+    const handleStorage = event => {
+      if (event.key !== 'admin_unread_notifications') {
+        return;
+      }
+      const nextCount = Number.parseInt(event.newValue || '0', 10);
+      setUnreadNotifications(Number.isFinite(nextCount) && nextCount > 0 ? nextCount : 0);
+    };
+
+    window.addEventListener('admin-notification-count-changed', handleCountChanged);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener('admin-notification-count-changed', handleCountChanged);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
 
   const loadProjects = async () => {
     try {
@@ -92,7 +121,12 @@ export default function Dashboard({ user, onLogout }) {
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              {getTabLabel(tab)}
+              <span className="flex-1 text-left">{getTabLabel(tab)}</span>
+              {tab === 'dashboard' && unreadNotifications > 0 && (
+                <span className="min-w-6 h-6 px-2 rounded-full bg-red-100 text-red-700 text-xs font-bold flex items-center justify-center">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -128,13 +162,25 @@ export default function Dashboard({ user, onLogout }) {
         <div className="bg-white shadow-sm p-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold">{getTabLabel(activeTab)}</h2>
           <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600">�</button>
+            <div className="relative">
+              <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" aria-label="Notificaciones">
+                🔔
+              </button>
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="p-6">
           {activeTab === 'dashboard' && (
-            <ProjectOverviewSection projects={projects} onNavigate={handleTabChange} />
+            <div className="space-y-6">
+              <AdminSummaryPanel onNavigate={handleTabChange} />
+              <ProjectOverviewSection projects={projects} onNavigate={handleTabChange} />
+            </div>
           )}
           {activeTab === 'equipos' && <EquiposSection user={user} onNavigate={navigate} />}
           {activeTab === 'reportes' && <ReportesSection projects={projects} />}

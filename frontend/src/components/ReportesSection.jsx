@@ -15,11 +15,22 @@ export default function ReportesSection({ projects }) {
   );
   const [endDate, setEndDate] = useState(new Date());
   const [selectedProject, setSelectedProject] = useState('todos');
+  const [selectedStatus, setSelectedStatus] = useState('todos');
   const [showDetails, setShowDetails] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportFiles, setReportFiles] = useState([]);
   const [reportFilesLoading, setReportFilesLoading] = useState(false);
   const [reportFilesError, setReportFilesError] = useState('');
+
+  const isImageFile = filename => /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(filename || '');
+  const isVideoFile = filename => /\.(mp4|webm|ogg|mov|avi|mkv|m4v)$/i.test(filename || '');
+
+  const getFileUrl = file => {
+    if (!file?.url) {
+      return '';
+    }
+    return file.url.startsWith('/') ? `${backendBase}${file.url}` : file.url;
+  };
 
   useEffect(() => {
     loadReports();
@@ -55,12 +66,12 @@ export default function ReportesSection({ projects }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) {
-        throw new Error('No se pudieron cargar las fotos');
+        throw new Error('No se pudieron cargar los adjuntos');
       }
       const data = await res.json();
       setReportFiles(data.files || []);
     } catch (err) {
-      setReportFilesError(err.message || 'Error al cargar las fotos');
+      setReportFilesError(err.message || 'Error al cargar los adjuntos');
     } finally {
       setReportFilesLoading(false);
     }
@@ -72,6 +83,14 @@ export default function ReportesSection({ projects }) {
     loadReportFiles(report?.id);
   };
 
+  const resetFilters = () => {
+    setSearchQuery('');
+    setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
+    setEndDate(new Date());
+    setSelectedProject('todos');
+    setSelectedStatus('todos');
+  };
+
   const filteredReports = reports
     .filter(report => {
       const reportDate = new Date(report.created_at);
@@ -81,7 +100,8 @@ export default function ReportesSection({ projects }) {
         report.supervisor_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         report.project_name?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchProject = selectedProject === 'todos' || report.project_name === selectedProject;
-      return matchDate && matchSearch && matchProject;
+      const matchStatus = selectedStatus === 'todos' || normalizeStatus(report.status) === selectedStatus;
+      return matchDate && matchSearch && matchProject && matchStatus;
     })
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
@@ -94,22 +114,89 @@ export default function ReportesSection({ projects }) {
     return colors[projectName] || 'bg-gray-500';
   };
 
-  const getStatusBadge = status => {
-    const badges = {
-      completado: 'bg-green-100 text-green-800',
-      revisión: 'bg-yellow-100 text-yellow-800',
-      pendiente: 'bg-red-100 text-red-800'
+  const normalizeStatus = status => (status || '').toString().trim().toLowerCase();
+
+  const getStatusInfo = status => {
+    const normalized = normalizeStatus(status);
+    const map = {
+      completado: {
+        badge: 'bg-green-100 text-green-800',
+        label: 'Completado',
+        hint: 'Reporte cerrado'
+      },
+      revisión: {
+        badge: 'bg-yellow-100 text-yellow-800',
+        label: 'En revisión',
+        hint: 'Requiere validación'
+      },
+      revision: {
+        badge: 'bg-yellow-100 text-yellow-800',
+        label: 'En revisión',
+        hint: 'Requiere validación'
+      },
+      pendiente: {
+        badge: 'bg-red-100 text-red-800',
+        label: 'Pendiente',
+        hint: 'Aún sin cierre'
+      }
     };
-    return badges[status] || 'bg-gray-100 text-gray-800';
+
+    return map[normalized] || {
+      badge: 'bg-gray-100 text-gray-800',
+      label: status || 'Sin estado',
+      hint: 'Estado no clasificado'
+    };
   };
 
-  const getStatusLabel = status => {
-    const labels = {
-      completado: 'Completado',
-      revisión: 'En Revisión',
-      pendiente: 'Pendiente'
-    };
-    return labels[status] || status;
+  const getStatusBadge = status => getStatusInfo(status).badge;
+
+  const getStatusLabel = status => getStatusInfo(status).label;
+
+  const getStatusHint = status => getStatusInfo(status).hint;
+
+  const reportStatusCounts = filteredReports.reduce(
+    (counts, report) => {
+      const status = normalizeStatus(report.status);
+      if (status === 'completado') {
+        counts.completado += 1;
+      } else if (status === 'revisión' || status === 'revision') {
+        counts.revision += 1;
+      } else if (status === 'pendiente') {
+        counts.pendiente += 1;
+      } else {
+        counts.otro += 1;
+      }
+      return counts;
+    },
+    { completado: 0, revision: 0, pendiente: 0, otro: 0 }
+  );
+
+  const statusQuickFilters = [
+    {
+      key: 'completado',
+      label: 'Completado',
+      count: reportStatusCounts.completado,
+      classes: 'bg-green-50 text-green-700 border-green-200'
+    },
+    {
+      key: 'revision',
+      label: 'En revisión',
+      count: reportStatusCounts.revision,
+      classes: 'bg-yellow-50 text-yellow-700 border-yellow-200'
+    },
+    {
+      key: 'pendiente',
+      label: 'Pendiente',
+      count: reportStatusCounts.pendiente,
+      classes: 'bg-red-50 text-red-700 border-red-200'
+    }
+  ];
+
+  const getStatusShare = count => {
+    if (filteredReports.length === 0) {
+      return 0;
+    }
+    return Math.round((count / filteredReports.length) * 100);
   };
 
   return (
@@ -141,8 +228,16 @@ export default function ReportesSection({ projects }) {
 
           {/* Filtros */}
           <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="font-semibold mb-4">Filtros de Búsqueda</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+              <h3 className="font-semibold">Filtros de Búsqueda</h3>
+              <button
+                onClick={resetFilters}
+                className="self-start md:self-auto text-sm font-semibold text-blue-600 hover:text-blue-700"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-2">BUSCAR</label>
                 <input
@@ -186,6 +281,47 @@ export default function ReportesSection({ projects }) {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2">ESTADO</label>
+                <select
+                  value={selectedStatus}
+                  onChange={e => setSelectedStatus(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="todos">Todos los Estados</option>
+                  <option value="completado">Completado</option>
+                  <option value="revision">En revisión</option>
+                  <option value="pendiente">Pendiente</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-600">
+              <span className="font-semibold text-gray-700">Filtros rápidos:</span>
+              {statusQuickFilters.map(status => {
+                const isActive = selectedStatus === status.key;
+                return (
+                  <button
+                    key={status.key}
+                    type="button"
+                    onClick={() => setSelectedStatus(isActive ? 'todos' : status.key)}
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border transition font-semibold ${
+                      isActive ? 'ring-2 ring-blue-200 border-blue-300' : status.classes
+                    }`}
+                  >
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        status.key === 'completado'
+                          ? 'bg-green-500'
+                          : status.key === 'revision'
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                      }`}
+                    ></span>
+                    {status.label}
+                    <span className="opacity-70">({status.count})</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -244,11 +380,14 @@ export default function ReportesSection({ projects }) {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span
-                          className={`text-xs font-semibold px-3 py-1 rounded ${getStatusBadge(report.status)}`}
-                        >
-                          {getStatusLabel(report.status)}
-                        </span>
+                        <div className="inline-flex flex-col items-center gap-1">
+                          <span
+                            className={`text-xs font-semibold px-3 py-1 rounded ${getStatusBadge(report.status)}`}
+                          >
+                            {getStatusLabel(report.status)}
+                          </span>
+                          <span className="text-[11px] text-gray-500">{getStatusHint(report.status)}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex justify-center gap-2">
@@ -275,28 +414,47 @@ export default function ReportesSection({ projects }) {
 
           {/* Estadísticas */}
           {filteredReports.length > 0 && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-4">
+              <div className="h-3 rounded-full overflow-hidden bg-gray-100 flex">
+                <div
+                  className="bg-green-500"
+                  style={{ width: `${getStatusShare(reportStatusCounts.completado)}%` }}
+                />
+                <div
+                  className="bg-yellow-500"
+                  style={{ width: `${getStatusShare(reportStatusCounts.revision)}%` }}
+                />
+                <div
+                  className="bg-red-500"
+                  style={{ width: `${getStatusShare(reportStatusCounts.pendiente)}%` }}
+                />
+                <div
+                  className="bg-gray-300"
+                  style={{ width: `${getStatusShare(reportStatusCounts.otro)}%` }}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white rounded-xl shadow p-4">
                 <p className="text-gray-600 text-sm">Total de Reportes</p>
                 <p className="text-2xl font-bold text-gray-900">{filteredReports.length}</p>
               </div>
               <div className="bg-white rounded-xl shadow p-4">
-                <p className="text-gray-600 text-sm">Fotos Subidas</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {filteredReports.reduce((sum, r) => sum + (r.photo_count || 0), 0)}
-                </p>
+                <p className="text-gray-600 text-sm">Completados</p>
+                <p className="text-2xl font-bold text-green-600">{reportStatusCounts.completado}</p>
+                <p className="text-xs text-gray-500 mt-1">{getStatusShare(reportStatusCounts.completado)}% del total</p>
               </div>
               <div className="bg-white rounded-xl shadow p-4">
-                <p className="text-gray-600 text-sm">Promedio por Reporte</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {filteredReports.length > 0
-                    ? Math.round(
-                        filteredReports.reduce((sum, r) => sum + (r.photo_count || 0), 0) /
-                          filteredReports.length
-                      )
-                    : 0}
-                </p>
+                <p className="text-gray-600 text-sm">En revisión</p>
+                <p className="text-2xl font-bold text-yellow-600">{reportStatusCounts.revision}</p>
+                <p className="text-xs text-gray-500 mt-1">{getStatusShare(reportStatusCounts.revision)}% del total</p>
               </div>
+              <div className="bg-white rounded-xl shadow p-4">
+                <p className="text-gray-600 text-sm">Pendientes</p>
+                <p className="text-2xl font-bold text-red-600">{reportStatusCounts.pendiente}</p>
+                <p className="text-xs text-gray-500 mt-1">{getStatusShare(reportStatusCounts.pendiente)}% del total</p>
+              </div>
+            </div>
             </div>
           )}
 
@@ -333,11 +491,14 @@ export default function ReportesSection({ projects }) {
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 font-semibold mb-1">ESTADO</p>
-                      <p
-                        className={`text-xs font-semibold px-3 py-1 rounded w-fit ${getStatusBadge(selectedReport.status)}`}
-                      >
-                        {getStatusLabel(selectedReport.status)}
-                      </p>
+                      <div className="space-y-2">
+                        <p
+                          className={`text-xs font-semibold px-3 py-1 rounded w-fit ${getStatusBadge(selectedReport.status)}`}
+                        >
+                          {getStatusLabel(selectedReport.status)}
+                        </p>
+                        <p className="text-xs text-gray-500">{getStatusHint(selectedReport.status)}</p>
+                      </div>
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 font-semibold mb-1">FOTOS SUBIDAS</p>
@@ -346,27 +507,39 @@ export default function ReportesSection({ projects }) {
                   </div>
 
                   <div>
-                    <p className="text-xs text-gray-600 font-semibold mb-2">FOTOS</p>
+                    <p className="text-xs text-gray-600 font-semibold mb-2">ADJUNTOS</p>
                     {reportFilesLoading && (
-                      <p className="text-xs text-gray-500">Cargando fotos...</p>
+                      <p className="text-xs text-gray-500">Cargando adjuntos...</p>
                     )}
                     {!reportFilesLoading && reportFiles.length > 0 && (
                       <div className="grid grid-cols-2 gap-3">
                         {reportFiles.map(file => {
-                          const src = file.url
-                            ? file.url.startsWith('/')
-                              ? `${backendBase}${file.url}`
-                              : file.url
-                            : '';
+                          const src = getFileUrl(file);
+                          const isImage = isImageFile(file.filename);
+                          const isVideo = isVideoFile(file.filename);
                           return (
                             <div key={file.id} className="border border-gray-100 rounded-lg p-2">
-                              {src ? (
+                              {src && isImage ? (
                                 <a href={src} target="_blank" rel="noreferrer">
                                   <img
                                     src={src}
                                     alt={file.filename}
                                     className="w-full h-28 object-cover rounded"
                                   />
+                                </a>
+                              ) : src && isVideo ? (
+                                <video controls className="w-full h-28 object-cover rounded">
+                                  <source src={src} />
+                                  Tu navegador no soporta video.
+                                </video>
+                              ) : src ? (
+                                <a
+                                  href={src}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs text-blue-600 underline break-words"
+                                >
+                                  {file.filename}
                                 </a>
                               ) : (
                                 <p className="text-xs text-gray-600 break-words">{file.filename}</p>
@@ -377,7 +550,7 @@ export default function ReportesSection({ projects }) {
                       </div>
                     )}
                     {!reportFilesLoading && reportFiles.length === 0 && !reportFilesError && (
-                      <p className="text-xs text-gray-500">No hay fotos disponibles</p>
+                      <p className="text-xs text-gray-500">No hay adjuntos disponibles</p>
                     )}
                     {reportFilesError && <p className="text-xs text-red-600">{reportFilesError}</p>}
                   </div>

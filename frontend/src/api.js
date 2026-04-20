@@ -60,11 +60,17 @@ export const projectsAPI = {
 
   createProject: data => api.post('/projects', data),
 
+  updateProject: (id, data) => api.patch(`/projects/${id}`, data),
+
   assignSupervisor: (projectId, supervisorId) =>
     api.post(`/projects/${projectId}/supervisors/${supervisorId}`),
 
   removeSupervisor: (projectId, supervisorId) =>
     api.delete(`/projects/${projectId}/supervisors/${supervisorId}`)
+};
+
+export const dashboardAPI = {
+  getSummary: () => api.get('/dashboard/summary')
 };
 
 export default api;
