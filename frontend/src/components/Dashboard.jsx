@@ -163,7 +163,10 @@ export default function Dashboard({ user, onLogout }) {
           <h2 className="text-2xl font-bold">{getTabLabel(activeTab)}</h2>
           <div className="flex items-center gap-4">
             <div className="relative">
-              <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600" aria-label="Notificaciones">
+              <button
+                className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
+                aria-label="Notificaciones"
+              >
                 🔔
               </button>
               {unreadNotifications > 0 && (

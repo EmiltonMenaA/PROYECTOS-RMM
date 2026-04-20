@@ -100,7 +100,8 @@ export default function ReportesSection({ projects }) {
         report.supervisor_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         report.project_name?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchProject = selectedProject === 'todos' || report.project_name === selectedProject;
-      const matchStatus = selectedStatus === 'todos' || normalizeStatus(report.status) === selectedStatus;
+      const matchStatus =
+        selectedStatus === 'todos' || normalizeStatus(report.status) === selectedStatus;
       return matchDate && matchSearch && matchProject && matchStatus;
     })
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -141,11 +142,13 @@ export default function ReportesSection({ projects }) {
       }
     };
 
-    return map[normalized] || {
-      badge: 'bg-gray-100 text-gray-800',
-      label: status || 'Sin estado',
-      hint: 'Estado no clasificado'
-    };
+    return (
+      map[normalized] || {
+        badge: 'bg-gray-100 text-gray-800',
+        label: status || 'Sin estado',
+        hint: 'Estado no clasificado'
+      }
+    );
   };
 
   const getStatusBadge = status => getStatusInfo(status).badge;
@@ -386,7 +389,9 @@ export default function ReportesSection({ projects }) {
                           >
                             {getStatusLabel(report.status)}
                           </span>
-                          <span className="text-[11px] text-gray-500">{getStatusHint(report.status)}</span>
+                          <span className="text-[11px] text-gray-500">
+                            {getStatusHint(report.status)}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -435,26 +440,36 @@ export default function ReportesSection({ projects }) {
               </div>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl shadow p-4">
-                <p className="text-gray-600 text-sm">Total de Reportes</p>
-                <p className="text-2xl font-bold text-gray-900">{filteredReports.length}</p>
+                <div className="bg-white rounded-xl shadow p-4">
+                  <p className="text-gray-600 text-sm">Total de Reportes</p>
+                  <p className="text-2xl font-bold text-gray-900">{filteredReports.length}</p>
+                </div>
+                <div className="bg-white rounded-xl shadow p-4">
+                  <p className="text-gray-600 text-sm">Completados</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {reportStatusCounts.completado}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {getStatusShare(reportStatusCounts.completado)}% del total
+                  </p>
+                </div>
+                <div className="bg-white rounded-xl shadow p-4">
+                  <p className="text-gray-600 text-sm">En revisión</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {reportStatusCounts.revision}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {getStatusShare(reportStatusCounts.revision)}% del total
+                  </p>
+                </div>
+                <div className="bg-white rounded-xl shadow p-4">
+                  <p className="text-gray-600 text-sm">Pendientes</p>
+                  <p className="text-2xl font-bold text-red-600">{reportStatusCounts.pendiente}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {getStatusShare(reportStatusCounts.pendiente)}% del total
+                  </p>
+                </div>
               </div>
-              <div className="bg-white rounded-xl shadow p-4">
-                <p className="text-gray-600 text-sm">Completados</p>
-                <p className="text-2xl font-bold text-green-600">{reportStatusCounts.completado}</p>
-                <p className="text-xs text-gray-500 mt-1">{getStatusShare(reportStatusCounts.completado)}% del total</p>
-              </div>
-              <div className="bg-white rounded-xl shadow p-4">
-                <p className="text-gray-600 text-sm">En revisión</p>
-                <p className="text-2xl font-bold text-yellow-600">{reportStatusCounts.revision}</p>
-                <p className="text-xs text-gray-500 mt-1">{getStatusShare(reportStatusCounts.revision)}% del total</p>
-              </div>
-              <div className="bg-white rounded-xl shadow p-4">
-                <p className="text-gray-600 text-sm">Pendientes</p>
-                <p className="text-2xl font-bold text-red-600">{reportStatusCounts.pendiente}</p>
-                <p className="text-xs text-gray-500 mt-1">{getStatusShare(reportStatusCounts.pendiente)}% del total</p>
-              </div>
-            </div>
             </div>
           )}
 
@@ -497,7 +512,9 @@ export default function ReportesSection({ projects }) {
                         >
                           {getStatusLabel(selectedReport.status)}
                         </p>
-                        <p className="text-xs text-gray-500">{getStatusHint(selectedReport.status)}</p>
+                        <p className="text-xs text-gray-500">
+                          {getStatusHint(selectedReport.status)}
+                        </p>
                       </div>
                     </div>
                     <div>

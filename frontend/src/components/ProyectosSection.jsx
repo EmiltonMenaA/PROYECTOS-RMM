@@ -229,9 +229,9 @@ export default function ProyectosSection({ user: _user }) {
     return matchesStatus && matchesCity;
   });
 
-  const availableCities = Array.from(new Set(projects.map(project => getCityLabel(project.city)))).sort(
-    (a, b) => a.localeCompare(b, 'es')
-  );
+  const availableCities = Array.from(
+    new Set(projects.map(project => getCityLabel(project.city)))
+  ).sort((a, b) => a.localeCompare(b, 'es'));
 
   const groupedProjects = filteredProjects.reduce((groups, project) => {
     const cityKey = getCityLabel(project.city);
@@ -424,7 +424,9 @@ export default function ProyectosSection({ user: _user }) {
 
                     <div className="mb-4">
                       <div className="flex justify-between items-center mb-2">
-                        <p className="text-xs text-gray-600 font-semibold">PROGRESO BASADO EN INFORMES</p>
+                        <p className="text-xs text-gray-600 font-semibold">
+                          PROGRESO BASADO EN INFORMES
+                        </p>
                         <div className="flex items-center gap-2">
                           <span
                             className={`px-2 py-1 rounded-full text-[11px] font-semibold ${getProgressBadge(
@@ -433,7 +435,9 @@ export default function ProyectosSection({ user: _user }) {
                           >
                             {getProgressLabel(getProjectProgress(project))}
                           </span>
-                          <p className="text-sm font-bold text-gray-800">{getProjectProgress(project)}%</p>
+                          <p className="text-sm font-bold text-gray-800">
+                            {getProjectProgress(project)}%
+                          </p>
                         </div>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -451,12 +455,16 @@ export default function ProyectosSection({ user: _user }) {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 pb-6 border-b">
                       <div>
                         <p className="text-xs text-gray-500 font-semibold">CIUDAD</p>
-                        <p className="font-bold text-sm text-gray-900">{getCityLabel(project.city)}</p>
+                        <p className="font-bold text-sm text-gray-900">
+                          {getCityLabel(project.city)}
+                        </p>
                       </div>
                       {project.contract_value && (
                         <div>
                           <p className="text-xs text-gray-500 font-semibold">VALOR CONTRATO</p>
-                          <p className="font-bold text-sm text-gray-900">{project.contract_value}</p>
+                          <p className="font-bold text-sm text-gray-900">
+                            {project.contract_value}
+                          </p>
                         </div>
                       )}
                       {project.start_date && (
@@ -477,7 +485,9 @@ export default function ProyectosSection({ user: _user }) {
                       )}
                       <div>
                         <p className="text-xs text-gray-500 font-semibold">SUPERVISORES</p>
-                        <p className="font-bold text-sm text-gray-900">{project.supervisors?.length || 0}</p>
+                        <p className="font-bold text-sm text-gray-900">
+                          {project.supervisors?.length || 0}
+                        </p>
                       </div>
                     </div>
 

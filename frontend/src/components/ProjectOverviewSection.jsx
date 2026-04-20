@@ -97,7 +97,9 @@ export default function ProjectOverviewSection({ projects, onNavigate }) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-bold text-gray-900">Proyectos por ciudad</h3>
-            <p className="text-sm text-gray-500">Distribución de proyectos activos en el mapa operativo</p>
+            <p className="text-sm text-gray-500">
+              Distribución de proyectos activos en el mapa operativo
+            </p>
           </div>
           <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-700">
             {statistics.cityCount} ciudades

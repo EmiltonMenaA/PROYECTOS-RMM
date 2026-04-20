@@ -59,7 +59,9 @@ export default function AdminSummaryPanel({ onNavigate }) {
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
   const [notifications, setNotifications] = useState([]);
-  const [unreadNotifications, setUnreadNotifications] = useState(() => getStoredNotificationCount());
+  const [unreadNotifications, setUnreadNotifications] = useState(() =>
+    getStoredNotificationCount()
+  );
   const lastSummarySignatureRef = useRef('');
 
   const updateUnreadCount = useCallback(count => {
@@ -87,24 +89,27 @@ export default function AdminSummaryPanel({ onNavigate }) {
     setLastUnchangedCheckAt(nowIso);
   }, []);
 
-  const fetchSummary = useCallback(async (silent = false) => {
-    try {
-      setError('');
-      if (silent) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+  const fetchSummary = useCallback(
+    async (silent = false) => {
+      try {
+        setError('');
+        if (silent) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
 
-      const { data } = await dashboardAPI.getSummary();
-      applySummaryPayload(data);
-    } catch (err) {
-      setError(err?.response?.data?.error || 'No se pudo cargar el panel de resumen');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [applySummaryPayload]);
+        const { data } = await dashboardAPI.getSummary();
+        applySummaryPayload(data);
+      } catch (err) {
+        setError(err?.response?.data?.error || 'No se pudo cargar el panel de resumen');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [applySummaryPayload]
+  );
 
   useEffect(() => {
     fetchSummary();
@@ -316,7 +321,8 @@ export default function AdminSummaryPanel({ onNavigate }) {
         </p>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
           <p className="text-xs text-gray-600">
-            Último cambio detectado: {lastChangeAt ? formatDateTime(lastChangeAt) : 'Sin cambios aún'}
+            Último cambio detectado:{' '}
+            {lastChangeAt ? formatDateTime(lastChangeAt) : 'Sin cambios aún'}
           </p>
           <p className="text-xs text-amber-700 font-medium">
             {lastUnchangedCheckAt
@@ -380,7 +386,8 @@ export default function AdminSummaryPanel({ onNavigate }) {
                         {item.report.author_name || 'Sin autor'}
                       </p>
                       <p>
-                        <span className="font-semibold">Estado:</span> {item.report.status || 'pending'}
+                        <span className="font-semibold">Estado:</span>{' '}
+                        {item.report.status || 'pending'}
                       </p>
                       <p>
                         <span className="font-semibold">Fecha informe:</span>{' '}
@@ -405,7 +412,9 @@ export default function AdminSummaryPanel({ onNavigate }) {
                 onClick={card.action}
                 className="bg-white rounded-xl shadow hover:shadow-lg transition text-left p-5 border border-transparent hover:border-blue-200"
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{card.title}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  {card.title}
+                </p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">{card.value}</p>
                 <p className="text-xs text-blue-600 mt-2">{card.helper}</p>
               </button>
@@ -466,7 +475,9 @@ export default function AdminSummaryPanel({ onNavigate }) {
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-amber-50 rounded-lg p-3">
                   <p className="text-xs text-amber-700 font-semibold">Pendientes</p>
-                  <p className="text-2xl font-bold text-amber-800 mt-1">{metrics.pending_reports ?? 0}</p>
+                  <p className="text-2xl font-bold text-amber-800 mt-1">
+                    {metrics.pending_reports ?? 0}
+                  </p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-3">
                   <p className="text-xs text-green-700 font-semibold">Completados</p>
@@ -476,7 +487,9 @@ export default function AdminSummaryPanel({ onNavigate }) {
                 </div>
                 <div className="bg-sky-50 rounded-lg p-3">
                   <p className="text-xs text-sky-700 font-semibold">Revisados</p>
-                  <p className="text-2xl font-bold text-sky-800 mt-1">{metrics.reviewed_reports ?? 0}</p>
+                  <p className="text-2xl font-bold text-sky-800 mt-1">
+                    {metrics.reviewed_reports ?? 0}
+                  </p>
                 </div>
               </div>
               <button
@@ -515,10 +528,18 @@ export default function AdminSummaryPanel({ onNavigate }) {
                   <tbody>
                     {recentReports.map(report => (
                       <tr key={report.id} className="border-b last:border-0">
-                        <td className="py-3 pr-2 text-sm text-gray-800">{report.project_name || 'Sin proyecto'}</td>
-                        <td className="py-3 pr-2 text-sm text-gray-600">{report.author_name || 'Sin autor'}</td>
-                        <td className="py-3 pr-2 text-sm text-gray-600">{report.status || 'pending'}</td>
-                        <td className="py-3 text-sm text-gray-600">{formatDateTime(report.created_at)}</td>
+                        <td className="py-3 pr-2 text-sm text-gray-800">
+                          {report.project_name || 'Sin proyecto'}
+                        </td>
+                        <td className="py-3 pr-2 text-sm text-gray-600">
+                          {report.author_name || 'Sin autor'}
+                        </td>
+                        <td className="py-3 pr-2 text-sm text-gray-600">
+                          {report.status || 'pending'}
+                        </td>
+                        <td className="py-3 text-sm text-gray-600">
+                          {formatDateTime(report.created_at)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
