@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS projects (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
+  city TEXT,
   description TEXT,
   location TEXT,
   lead INTEGER REFERENCES users(id) ON DELETE SET NULL,

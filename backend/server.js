@@ -12,6 +12,7 @@ const reportsRouter = require('./routes/reports');
 const evidenceRouter = require('./routes/evidence');
 const rolesRouter = require('./routes/roles');
 const userPermissionsRouter = require('./routes/user-permissions');
+const dashboardRouter = require('./routes/dashboard');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/reports', reportsRouter);
 app.use('/api/evidence', evidenceRouter);
 app.use('/api/roles', rolesRouter);
 app.use('/api/users', userPermissionsRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

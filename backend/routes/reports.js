@@ -56,14 +56,35 @@ router.get('/', async (req, res) => {
 const storage = require('../storage');
 const { retry } = require('../utils/retry');
 const logger = require('../utils/logger');
+const notifications = require('../utils/notifications');
 
 const reportUpload = upload.fields([
   { name: 'photos', maxCount: 30 },
   { name: 'attachments', maxCount: 30 }
 ]);
 
+function runReportUpload(req, res) {
+  return new Promise((resolve, reject) => {
+    reportUpload(req, res, err => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+}
+
 // Robust submit: use DB transaction and retries for uploads
-router.post('/', requireAuth, reportUpload, async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
+  try {
+    await runReportUpload(req, res);
+  } catch (err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: `Upload inválido: ${err.message}` });
+    }
+    return res.status(400).json({ error: err.message || 'No se pudieron procesar los archivos' });
+  }
+
   const { project_id, summary, details } = req.body;
   const author_id = req.user && req.user.id;
 
@@ -79,8 +100,9 @@ router.post('/', requireAuth, reportUpload, async (req, res) => {
     return res.status(400).json({ error: 'project_id is required' });
   }
 
-  const client = await db.pool.connect();
+  let client;
   try {
+    client = await db.pool.connect();
     const assignment = await client.query(
       'SELECT 1 FROM project_supervisors WHERE project_id = $1 AND user_id = $2 LIMIT 1',
       [project_id, author_id]
@@ -130,13 +152,46 @@ router.post('/', requireAuth, reportUpload, async (req, res) => {
     }
 
     await client.query('COMMIT');
+
+    try {
+      const reportDetailResult = await db.query(
+        `
+          SELECT
+            r.id,
+            r.created_at,
+            r.status,
+            COALESCE(r.summary, r.details, '') AS description,
+            p.name AS project_name,
+            u.full_name AS author_name
+          FROM reports r
+          LEFT JOIN projects p ON p.id = r.project_id
+          LEFT JOIN users u ON u.id = r.author_id
+          WHERE r.id = $1
+          LIMIT 1
+        `,
+        [report.id]
+      );
+
+      if (reportDetailResult.rowCount > 0) {
+        notifications.notify('report.created', {
+          report: reportDetailResult.rows[0]
+        });
+      }
+    } catch (notifyErr) {
+      logger.error('Could not broadcast report notification', { err: notifyErr.message });
+    }
+
     res.json({ report, files: savedFiles });
   } catch (err) {
-    await client.query('ROLLBACK');
+    if (client) {
+      await client.query('ROLLBACK');
+    }
     logger.error('Failed to create report', { err: err.message });
     res.status(500).json({ error: 'Could not create report' });
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 });
 

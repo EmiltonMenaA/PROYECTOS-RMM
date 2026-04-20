@@ -2,14 +2,19 @@ import { useMemo } from 'react';
 
 export default function ProjectOverviewCard({ project }) {
   const calculateProgress = useMemo(() => {
-    // Calcular progreso basado en el estado del proyecto
+    const reportedProgress = Number(project.progress_percent);
+    if (Number.isFinite(reportedProgress)) {
+      return Math.max(0, Math.min(100, Math.round(reportedProgress)));
+    }
+
+    // Fallback si todavía no llegan informes.
     const statusProgress = {
       planning: 25,
       'in-progress': 65,
       completed: 100
     };
     return statusProgress[project.status] || 0;
-  }, [project.status]);
+  }, [project.progress_percent, project.status]);
 
   const getStatusColor = status => {
     switch (status) {
@@ -45,6 +50,32 @@ export default function ProjectOverviewCard({ project }) {
       return 'bg-yellow-500';
     }
     return 'bg-green-500';
+  };
+
+  const getProgressLabel = progress => {
+    if (progress >= 100) {
+      return 'Completado';
+    }
+    if (progress >= 75) {
+      return 'Avanzado';
+    }
+    if (progress >= 40) {
+      return 'En progreso';
+    }
+    return 'Inicial';
+  };
+
+  const getProgressBadge = progress => {
+    if (progress >= 100) {
+      return 'bg-green-50 text-green-700';
+    }
+    if (progress >= 75) {
+      return 'bg-blue-50 text-blue-700';
+    }
+    if (progress >= 40) {
+      return 'bg-yellow-50 text-yellow-700';
+    }
+    return 'bg-red-50 text-red-700';
   };
 
   const getSupervisorInitials = supervisors => {
@@ -106,8 +137,15 @@ export default function ProjectOverviewCard({ project }) {
         {/* Progress Bar */}
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
-            <p className="text-xs text-gray-600">Progreso</p>
-            <p className="text-sm font-bold text-gray-800">{calculateProgress}%</p>
+            <p className="text-xs text-gray-600">Progreso basado en informes</p>
+            <div className="flex items-center gap-2">
+              <span
+                className={`px-2 py-1 rounded-full text-[11px] font-semibold ${getProgressBadge(calculateProgress)}`}
+              >
+                {getProgressLabel(calculateProgress)}
+              </span>
+              <p className="text-sm font-bold text-gray-800">{calculateProgress}%</p>
+            </div>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div
@@ -142,6 +180,12 @@ export default function ProjectOverviewCard({ project }) {
 
         {/* Project Details */}
         <div className="mt-4 pt-4 border-t space-y-2 text-sm">
+          {project.city && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">🏙️</span>
+              <span className="text-gray-700">{project.city}</span>
+            </div>
+          )}
           {project.location && (
             <div className="flex items-center gap-2">
               <span className="text-gray-400">📍</span>
