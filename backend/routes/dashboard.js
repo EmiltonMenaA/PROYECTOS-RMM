@@ -1,7 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const { requireAdmin } = require('../middleware/auth');
 const notifications = require('../utils/notifications');
 
 const router = express.Router();
@@ -86,32 +85,6 @@ function getSummarySignature(summary) {
     metrics: summary.metrics,
     recent_reports: summary.recent_reports
   });
-}
-
-function getTokenFromRequest(req) {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.split(' ')[1];
-  }
-
-  return null;
-}
-
-function getAdminFromRequest(req) {
-  const token = getTokenFromRequest(req);
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
-    if (payload.role !== 'admin') {
-      return null;
-    }
-    return payload;
-  } catch (_err) {
-    return null;
-  }
 }
 
 // Development mode: allow unauthenticated access
