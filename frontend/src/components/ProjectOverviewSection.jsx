@@ -21,7 +21,12 @@ export default function ProjectOverviewSection({ projects, onNavigate }) {
         p.supervisors.forEach(sup => uniqueSupervisors.add(sup.id));
       }
 
-      const city = p.city && p.city.trim() ? p.city.trim() : 'Sin ciudad';
+      const city =
+        p.city && p.city.trim()
+          ? p.city.trim()
+          : p.location && p.location.trim()
+            ? p.location.split(',')[0].trim() || 'Sin ciudad'
+            : 'Sin ciudad';
       cityCounts.set(city, (cityCounts.get(city) || 0) + 1);
     });
 

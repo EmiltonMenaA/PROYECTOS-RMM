@@ -4,11 +4,49 @@ import { dashboardAPI } from '../api';
 const REFRESH_INTERVAL_MS = 15000;
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 const NOTIFICATION_COUNT_KEY = 'admin_unread_notifications';
+const NOTIFICATION_LIST_KEY = 'admin_notifications';
 
 function getStoredNotificationCount() {
   const raw = localStorage.getItem(NOTIFICATION_COUNT_KEY);
   const parsed = Number.parseInt(raw || '0', 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function getStoredNotifications() {
+  try {
+    const raw = localStorage.getItem(NOTIFICATION_LIST_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map(notification => ({
+        id: notification.id,
+        created_at: notification.created_at || new Date().toISOString(),
+        message: notification.message || 'Nuevo informe registrado',
+        report: notification.report || null,
+        read: Boolean(notification.read)
+      }))
+      .filter(notification => notification.id);
+  } catch (_err) {
+    return [];
+  }
+}
+
+function saveNotifications(notifications) {
+  localStorage.setItem(NOTIFICATION_LIST_KEY, JSON.stringify(notifications));
+}
+
+function makeNotificationId(report, createdAt) {
+  if (report?.id) {
+    return `report-${report.id}`;
+  }
+  return `report-${createdAt || new Date().toISOString()}`;
 }
 
 function publishNotificationCount(count) {
@@ -58,36 +96,108 @@ export default function AdminSummaryPanel({ onNavigate }) {
   const [lastUnchangedCheckAt, setLastUnchangedCheckAt] = useState('');
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadNotifications, setUnreadNotifications] = useState(() =>
-    getStoredNotificationCount()
-  );
+  const [notifications, setNotifications] = useState(() => getStoredNotifications());
+  const legacyUnreadCountRef = useRef(getStoredNotificationCount());
+  const seededFromSummaryRef = useRef(false);
   const lastSummarySignatureRef = useRef('');
+  const unreadNotifications = notifications.filter(notification => !notification.read).length;
+  const readNotifications = notifications.filter(notification => notification.read);
 
-  const updateUnreadCount = useCallback(count => {
-    setUnreadNotifications(count);
-    publishNotificationCount(count);
+  useEffect(() => {
+    saveNotifications(notifications);
+    publishNotificationCount(unreadNotifications);
+  }, [notifications, unreadNotifications]);
+
+  const addNotification = useCallback(notification => {
+    setNotifications(prev => {
+      if (prev.some(item => item.id === notification.id)) {
+        return prev;
+      }
+
+      return [notification, ...prev].slice(0, 8);
+    });
   }, []);
 
   const markAllAsRead = useCallback(() => {
-    updateUnreadCount(0);
-  }, [updateUnreadCount]);
+    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+  }, []);
 
-  const applySummaryPayload = useCallback(payload => {
-    const signature = getSummarySignature(payload);
-    const nowIso = new Date().toISOString();
+  const seedNotificationsFromSummary = useCallback(
+    payload => {
+      const fallbackUnreadCount = legacyUnreadCountRef.current;
+      if (seededFromSummaryRef.current || notifications.length > 0 || fallbackUnreadCount <= 0) {
+        return;
+      }
 
-    if (signature !== lastSummarySignatureRef.current) {
-      lastSummarySignatureRef.current = signature;
-      setSummary(payload);
-      setLastChangeAt(nowIso);
-      setLastUnchangedCheckAt('');
+      const recentReports = Array.isArray(payload?.recent_reports) ? payload.recent_reports : [];
+      if (recentReports.length === 0) {
+        return;
+      }
+
+      const seededNotifications = recentReports
+        .slice(0, fallbackUnreadCount)
+        .map((report, index) => ({
+          id: makeNotificationId(report, report.created_at || String(index)),
+          created_at: report.created_at || new Date().toISOString(),
+          message: 'Nuevo informe registrado',
+          report,
+          read: false
+        }));
+
+      if (seededNotifications.length > 0) {
+        seededFromSummaryRef.current = true;
+        setNotifications(seededNotifications);
+      }
+    },
+    [notifications.length]
+  );
+
+  const mergeRecentReportsAsNotifications = useCallback(payload => {
+    const recentReports = Array.isArray(payload?.recent_reports) ? payload.recent_reports : [];
+    if (recentReports.length === 0) {
       return;
     }
 
-    // Polling fallback can return same data repeatedly; keep current summary and mark no-change check.
-    setLastUnchangedCheckAt(nowIso);
+    setNotifications(prev => {
+      const existingIds = new Set(prev.map(item => item.id));
+      const incoming = recentReports
+        .map(report => ({
+          id: makeNotificationId(report, report.created_at),
+          created_at: report.created_at || new Date().toISOString(),
+          message: 'Nuevo informe registrado',
+          report,
+          read: false
+        }))
+        .filter(item => !existingIds.has(item.id));
+
+      if (incoming.length === 0) {
+        return prev;
+      }
+
+      return [...incoming, ...prev].slice(0, 8);
+    });
   }, []);
+
+  const applySummaryPayload = useCallback(
+    payload => {
+      const signature = getSummarySignature(payload);
+      const nowIso = new Date().toISOString();
+
+      if (signature !== lastSummarySignatureRef.current) {
+        lastSummarySignatureRef.current = signature;
+        setSummary(payload);
+        seedNotificationsFromSummary(payload);
+        mergeRecentReportsAsNotifications(payload);
+        setLastChangeAt(nowIso);
+        setLastUnchangedCheckAt('');
+        return;
+      }
+
+      // Polling fallback can return same data repeatedly; keep current summary and mark no-change check.
+      setLastUnchangedCheckAt(nowIso);
+    },
+    [mergeRecentReportsAsNotifications, seedNotificationsFromSummary]
+  );
 
   const fetchSummary = useCallback(
     async (silent = false) => {
@@ -149,25 +259,17 @@ export default function AdminSummaryPanel({ onNavigate }) {
           const notificationPayload = JSON.parse(dataLines.join('\n'));
           if (notificationPayload?.type === 'report.created' && notificationPayload?.report) {
             const report = notificationPayload.report;
-            const notificationId = `${report.id}-${notificationPayload.created_at || new Date().toISOString()}`;
+            const notificationId = makeNotificationId(
+              report,
+              notificationPayload.created_at || new Date().toISOString()
+            );
 
-            setNotifications(prev => {
-              const next = [
-                {
-                  id: notificationId,
-                  created_at: notificationPayload.created_at || new Date().toISOString(),
-                  message: 'Nuevo informe registrado',
-                  report
-                },
-                ...prev
-              ];
-              return next.slice(0, 8);
-            });
-
-            setUnreadNotifications(prev => {
-              const nextCount = prev + 1;
-              publishNotificationCount(nextCount);
-              return nextCount;
+            addNotification({
+              id: notificationId,
+              created_at: notificationPayload.created_at || new Date().toISOString(),
+              message: 'Nuevo informe registrado',
+              report,
+              read: false
             });
 
             setLastChangeAt(new Date().toISOString());
@@ -249,7 +351,7 @@ export default function AdminSummaryPanel({ onNavigate }) {
     return () => {
       controller.abort();
     };
-  }, [applySummaryPayload]);
+  }, [applySummaryPayload, addNotification]);
 
   useEffect(() => {
     if (streamConnected) {
@@ -369,38 +471,100 @@ export default function AdminSummaryPanel({ onNavigate }) {
                 Aun no hay notificaciones. Se mostraran aqui cuando se registre un informe.
               </p>
             ) : (
-              <div className="space-y-3">
-                {notifications.map(item => (
-                  <div key={item.id} className="border border-blue-100 bg-blue-50 rounded-lg p-4">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                      <p className="text-sm font-semibold text-blue-900">{item.message}</p>
-                      <p className="text-xs text-blue-700">{formatDateTime(item.created_at)}</p>
-                    </div>
-                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700">
-                      <p>
-                        <span className="font-semibold">Proyecto:</span>{' '}
-                        {item.report.project_name || 'Sin proyecto'}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Autor:</span>{' '}
-                        {item.report.author_name || 'Sin autor'}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Estado:</span>{' '}
-                        {item.report.status || 'pending'}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Fecha informe:</span>{' '}
-                        {formatDateTime(item.report.created_at)}
-                      </p>
-                    </div>
-                    {item.report.description && (
-                      <p className="text-xs text-gray-700 mt-2">
-                        <span className="font-semibold">Resumen:</span> {item.report.description}
-                      </p>
-                    )}
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  <h4 className="text-sm font-bold text-gray-900">
+                    Sin leer ({unreadNotifications})
+                  </h4>
+                  {notifications.filter(item => !item.read).length === 0 ? (
+                    <p className="text-xs text-gray-500">No hay notificaciones sin leer.</p>
+                  ) : (
+                    notifications
+                      .filter(item => !item.read)
+                      .map(item => (
+                        <div
+                          key={item.id}
+                          className="border border-blue-100 bg-blue-50 rounded-lg p-4"
+                        >
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                            <p className="text-sm font-semibold text-blue-900">{item.message}</p>
+                            <p className="text-xs text-blue-700">
+                              {formatDateTime(item.created_at)}
+                            </p>
+                          </div>
+                          <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700">
+                            <p>
+                              <span className="font-semibold">Proyecto:</span>{' '}
+                              {item.report?.project_name || 'Sin proyecto'}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Autor:</span>{' '}
+                              {item.report?.author_name || 'Sin autor'}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Estado:</span>{' '}
+                              {item.report?.status || 'pending'}
+                            </p>
+                            <p>
+                              <span className="font-semibold">Fecha informe:</span>{' '}
+                              {formatDateTime(item.report?.created_at)}
+                            </p>
+                          </div>
+                          {item.report?.description && (
+                            <p className="text-xs text-gray-700 mt-2">
+                              <span className="font-semibold">Resumen:</span>{' '}
+                              {item.report.description}
+                            </p>
+                          )}
+                        </div>
+                      ))
+                  )}
+                </div>
+
+                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  <h4 className="text-sm font-bold text-gray-900">
+                    Leídas ({readNotifications.length})
+                  </h4>
+                  {readNotifications.length === 0 ? (
+                    <p className="text-xs text-gray-500">No hay notificaciones leídas todavía.</p>
+                  ) : (
+                    readNotifications.map(item => (
+                      <div
+                        key={item.id}
+                        className="border border-gray-200 bg-gray-50 rounded-lg p-4 opacity-80"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                          <p className="text-sm font-semibold text-gray-800">{item.message}</p>
+                          <p className="text-xs text-gray-600">{formatDateTime(item.created_at)}</p>
+                        </div>
+                        <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-700">
+                          <p>
+                            <span className="font-semibold">Proyecto:</span>{' '}
+                            {item.report?.project_name || 'Sin proyecto'}
+                          </p>
+                          <p>
+                            <span className="font-semibold">Autor:</span>{' '}
+                            {item.report?.author_name || 'Sin autor'}
+                          </p>
+                          <p>
+                            <span className="font-semibold">Estado:</span>{' '}
+                            {item.report?.status || 'pending'}
+                          </p>
+                          <p>
+                            <span className="font-semibold">Fecha informe:</span>{' '}
+                            {formatDateTime(item.report?.created_at)}
+                          </p>
+                        </div>
+                        {item.report?.description && (
+                          <p className="text-xs text-gray-700 mt-2">
+                            <span className="font-semibold">Resumen:</span>{' '}
+                            {item.report.description}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </section>
