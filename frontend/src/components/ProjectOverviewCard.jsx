@@ -1,6 +1,13 @@
 import { useMemo } from 'react';
 
 export default function ProjectOverviewCard({ project }) {
+  const projectCity =
+    project.city && project.city.trim()
+      ? project.city.trim()
+      : project.location && project.location.trim()
+        ? project.location.split(',')[0].trim() || 'Sin ciudad'
+        : 'Sin ciudad';
+
   const calculateProgress = useMemo(() => {
     const reportedProgress = Number(project.progress_percent);
     if (Number.isFinite(reportedProgress)) {
@@ -180,10 +187,10 @@ export default function ProjectOverviewCard({ project }) {
 
         {/* Project Details */}
         <div className="mt-4 pt-4 border-t space-y-2 text-sm">
-          {project.city && (
+          {projectCity !== 'Sin ciudad' && (
             <div className="flex items-center gap-2">
               <span className="text-gray-400">🏙️</span>
-              <span className="text-gray-700">{project.city}</span>
+              <span className="text-gray-700">{projectCity}</span>
             </div>
           )}
           {project.location && (

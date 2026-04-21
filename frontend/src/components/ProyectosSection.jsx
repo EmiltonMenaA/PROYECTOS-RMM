@@ -180,7 +180,20 @@ export default function ProyectosSection({ user: _user }) {
     return labels[status] || status;
   };
 
-  const getCityLabel = city => (city && city.trim() ? city.trim() : 'Sin ciudad');
+  const getProjectCity = project => {
+    const explicitCity = project.city && project.city.trim() ? project.city.trim() : '';
+    if (explicitCity) {
+      return explicitCity;
+    }
+
+    const location = project.location && project.location.trim() ? project.location.trim() : '';
+    if (!location) {
+      return 'Sin ciudad';
+    }
+
+    const inferredCity = location.split(',')[0].trim();
+    return inferredCity || 'Sin ciudad';
+  };
 
   const getProjectProgress = project => {
     const progress = Number(project.progress_percent);
@@ -225,16 +238,16 @@ export default function ProyectosSection({ user: _user }) {
 
   const filteredProjects = projects.filter(p => {
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
-    const matchesCity = cityFilter === 'all' || getCityLabel(p.city) === cityFilter;
+    const matchesCity = cityFilter === 'all' || getProjectCity(p) === cityFilter;
     return matchesStatus && matchesCity;
   });
 
   const availableCities = Array.from(
-    new Set(projects.map(project => getCityLabel(project.city)))
+    new Set(projects.map(project => getProjectCity(project)))
   ).sort((a, b) => a.localeCompare(b, 'es'));
 
   const groupedProjects = filteredProjects.reduce((groups, project) => {
-    const cityKey = getCityLabel(project.city);
+    const cityKey = getProjectCity(project);
     if (!groups[cityKey]) {
       groups[cityKey] = [];
     }
@@ -403,7 +416,9 @@ export default function ProyectosSection({ user: _user }) {
                       <div className="flex-1">
                         <h3 className="text-xl font-bold">{project.name}</h3>
                         <p className="text-gray-600 text-sm">
-                          {project.city ? `${project.city} · ` : ''}
+                          {getProjectCity(project) !== 'Sin ciudad'
+                            ? `${getProjectCity(project)} · `
+                            : ''}
                           {project.location}
                         </p>
                       </div>
@@ -455,9 +470,7 @@ export default function ProyectosSection({ user: _user }) {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 pb-6 border-b">
                       <div>
                         <p className="text-xs text-gray-500 font-semibold">CIUDAD</p>
-                        <p className="font-bold text-sm text-gray-900">
-                          {getCityLabel(project.city)}
-                        </p>
+                        <p className="font-bold text-sm text-gray-900">{getProjectCity(project)}</p>
                       </div>
                       {project.contract_value && (
                         <div>
