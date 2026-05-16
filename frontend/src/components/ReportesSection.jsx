@@ -51,7 +51,6 @@ export default function ReportesSection({ projects }) {
       const data = await res.json();
       setReports(data.reports || []);
     } catch (err) {
-      console.error('Error loading reports:', err);
       setReports([]);
     } finally {
       setLoading(false);
@@ -88,7 +87,9 @@ export default function ReportesSection({ projects }) {
   const loadReportComments = async reportId => {
     setReportComments([]);
     setReportCommentsError('');
-    if (!reportId) return;
+    if (!reportId) {
+      return;
+    }
     setReportCommentsLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -108,7 +109,9 @@ export default function ReportesSection({ projects }) {
   };
 
   const submitComment = async reportId => {
-    if (!newComment || !reportId) return;
+    if (!newComment || !reportId) {
+      return;
+    }
     setAddingComment(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -624,62 +627,70 @@ export default function ReportesSection({ projects }) {
                       <p className="text-xs text-gray-500">No hay adjuntos disponibles</p>
                     )}
                     {reportFilesError && <p className="text-xs text-red-600">{reportFilesError}</p>}
-                                  </div>
+                  </div>
 
-                                  {/* Comentarios */}
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold mb-2">COMENTARIOS</p>
-                                    {reportCommentsLoading && (
-                                      <p className="text-xs text-gray-500">Cargando comentarios...</p>
-                                    )}
-                                    {!reportCommentsLoading && reportComments.length > 0 && (
-                                      <div className="space-y-3">
-                                        {reportComments.map(c => (
-                                          <div key={c.id} className="border rounded-lg p-3 bg-gray-50">
-                                            <div className="flex justify-between items-start">
-                                              <div>
-                                                <p className="text-xs font-semibold text-gray-800">{c.author_name || 'Usuario'}</p>
-                                                <p className="text-xs text-gray-500">{new Date(c.created_at).toLocaleString('es-ES')}</p>
-                                              </div>
-                                            </div>
-                                            <p className="mt-2 text-sm text-gray-700">{c.comment}</p>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
-                                    {!reportCommentsLoading && reportComments.length === 0 && !reportCommentsError && (
-                                      <p className="text-xs text-gray-500">No hay comentarios</p>
-                                    )}
-                                    {reportCommentsError && <p className="text-xs text-red-600">{reportCommentsError}</p>}
+                  {/* Comentarios */}
+                  <div>
+                    <p className="text-xs text-gray-600 font-semibold mb-2">COMENTARIOS</p>
+                    {reportCommentsLoading && (
+                      <p className="text-xs text-gray-500">Cargando comentarios...</p>
+                    )}
+                    {!reportCommentsLoading && reportComments.length > 0 && (
+                      <div className="space-y-3">
+                        {reportComments.map(c => (
+                          <div key={c.id} className="border rounded-lg p-3 bg-gray-50">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-xs font-semibold text-gray-800">
+                                  {c.author_name || 'Usuario'}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(c.created_at).toLocaleString('es-ES')}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-700">{c.comment}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!reportCommentsLoading &&
+                      reportComments.length === 0 &&
+                      !reportCommentsError && (
+                        <p className="text-xs text-gray-500">No hay comentarios</p>
+                      )}
+                    {reportCommentsError && (
+                      <p className="text-xs text-red-600">{reportCommentsError}</p>
+                    )}
 
-                                    {/* Formulario para agregar comentario (requires auth) */}
-                                    {typeof window !== 'undefined' && localStorage.getItem('auth_token') && (
-                                      <div className="mt-3">
-                                        <textarea
-                                          value={newComment}
-                                          onChange={e => setNewComment(e.target.value)}
-                                          placeholder="Escribe un comentario..."
-                                          className="w-full p-3 border rounded-lg resize-y"
-                                          rows={3}
-                                        />
-                                        <div className="mt-2 flex gap-2">
-                                          <button
-                                            onClick={() => submitComment(selectedReport.id)}
-                                            disabled={addingComment || newComment.trim() === ''}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
-                                          >
-                                            {addingComment ? 'Enviando...' : 'Agregar comentario'}
-                                          </button>
-                                          <button
-                                            onClick={() => setNewComment('')}
-                                            type="button"
-                                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-                                          >
-                                            Cancelar
-                                          </button>
-                                        </div>
-                                      </div>
-                                    )}
+                    {/* Formulario para agregar comentario (requires auth) */}
+                    {typeof window !== 'undefined' && localStorage.getItem('auth_token') && (
+                      <div className="mt-3">
+                        <textarea
+                          value={newComment}
+                          onChange={e => setNewComment(e.target.value)}
+                          placeholder="Escribe un comentario..."
+                          className="w-full p-3 border rounded-lg resize-y"
+                          rows={3}
+                        />
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            onClick={() => submitComment(selectedReport.id)}
+                            disabled={addingComment || newComment.trim() === ''}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
+                          >
+                            {addingComment ? 'Enviando...' : 'Agregar comentario'}
+                          </button>
+                          <button
+                            onClick={() => setNewComment('')}
+                            type="button"
+                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {selectedReport.description && (
