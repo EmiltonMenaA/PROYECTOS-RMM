@@ -195,4 +195,85 @@ router.post('/', requireAuth, async (req, res) => {
   }
 });
 
+// Get comments for a specific report
+router.get('/:reportId/comments', requireAuth, async (req, res) => {
+  const reportId = parseInt(req.params.reportId, 10);
+  if (!reportId) {
+    return res.status(400).json({ error: 'Invalid report id' });
+  }
+
+  try {
+    const result = await db.query(
+      `SELECT rc.id, rc.report_id, rc.author_id, rc.comment, rc.created_at, u.full_name AS author_name
+       FROM report_comments rc
+       LEFT JOIN users u ON u.id = rc.author_id
+       WHERE rc.report_id = $1
+       ORDER BY rc.created_at DESC`,
+      [reportId]
+    );
+
+    res.json({ comments: result.rows });
+  } catch (err) {
+    console.error('Failed to load comments', err);
+    res.status(500).json({ error: 'Could not load comments' });
+  }
+});
+
+// Add a comment to a report
+router.post('/:reportId/comments', requireAuth, async (req, res) => {
+  const reportId = parseInt(req.params.reportId, 10);
+  const { comment } = req.body;
+  const author_id = req.user && req.user.id;
+
+  if (!author_id) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (!['supervisor', 'admin'].includes(req.user?.role)) {
+    return res.status(403).json({ error: 'Supervisor role required to add comments' });
+  }
+
+  if (!reportId || !comment || comment.toString().trim() === '') {
+    return res.status(400).json({ error: 'reportId and comment are required' });
+  }
+
+  try {
+    // Verify report exists and supervisor assignment (unless admin)
+    const reportRes = await db.query('SELECT project_id FROM reports WHERE id = $1 LIMIT 1', [reportId]);
+    if (reportRes.rowCount === 0) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    const projectId = reportRes.rows[0].project_id;
+    if (req.user.role !== 'admin') {
+      const assignment = await db.query(
+        'SELECT 1 FROM project_supervisors WHERE project_id = $1 AND user_id = $2 LIMIT 1',
+        [projectId, author_id]
+      );
+      if (assignment.rowCount === 0) {
+        return res.status(403).json({ error: 'Project not assigned to this supervisor' });
+      }
+    }
+
+    const insert = await db.query(
+      'INSERT INTO report_comments (report_id, author_id, comment) VALUES ($1, $2, $3) RETURNING id, report_id, author_id, comment, created_at',
+      [reportId, author_id, comment]
+    );
+
+    const saved = insert.rows[0];
+
+    // Optional: notify admins about new comment
+    try {
+      notifications.notify('report.comment.created', { report_id: reportId, comment: saved });
+    } catch (notifyErr) {
+      logger.error('Could not send comment notification', { err: notifyErr.message });
+    }
+
+    res.json({ comment: saved });
+  } catch (err) {
+    console.error('Failed to add comment', err);
+    res.status(500).json({ error: 'Could not add comment' });
+  }
+});
+
 module.exports = router;
