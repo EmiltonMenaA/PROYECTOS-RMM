@@ -239,7 +239,9 @@ router.post('/:reportId/comments', requireAuth, async (req, res) => {
 
   try {
     // Verify report exists and supervisor assignment (unless admin)
-    const reportRes = await db.query('SELECT project_id FROM reports WHERE id = $1 LIMIT 1', [reportId]);
+    const reportRes = await db.query('SELECT project_id FROM reports WHERE id = $1 LIMIT 1', [
+      reportId
+    ]);
     if (reportRes.rowCount === 0) {
       return res.status(404).json({ error: 'Report not found' });
     }
